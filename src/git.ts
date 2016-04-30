@@ -32,6 +32,52 @@ export namespace git {
         }
     }
 
+    export class TagRef {
+        constructor(public name: string){}
+
+        /**
+         * Get a tag reference by name
+         */
+        public static fromName(name: string) {
+            return new TagRef(name);
+        }
+
+        /**
+         * Parse a list of tags returned by git
+         */
+        public static parseListing(output: string): TagRef[] {
+            return output
+                .replace('\r\n', '\n')
+                .trim()
+                .split('\n')
+                .filter(line => !!line.length)
+                .map(line => line.trim())
+                .reduce((acc, name) => {
+                    if (!(name in acc))
+                        acc.push(name);
+                    return acc;
+                }, [])
+                .map(name => new TagRef(name));
+        }
+
+        /**
+         * Get a list of all tags
+         */
+        public static all = async function() {
+            const result = await cmd.executeRequired('git', ['tag', '-l']);
+            return TagRef.parseListing(result.stdout);
+        }
+
+        /**
+         * Check if the tag exists
+         */
+        public exists = async function(): Promise<boolean> {
+            const self: TagRef = this;
+            const all = await TagRef.all();
+            return all.some(tag => tag.name === self.name);
+        }
+    }
+
     export class BranchRef {
         constructor(public name: string) { }
 
@@ -45,7 +91,7 @@ export namespace git {
         /**
          * Parse a list of branches returned by git stdout
          */
-        public static parseListing(output: string) {
+        public static parseListing(output: string): BranchRef[] {
             return output
                 .replace('\r\n', '\n')
                 .trim()
@@ -93,6 +139,13 @@ export namespace git {
             const self: BranchRef = this;
             const result = await cmd.execute('git', ['rev-parse', self.name]);
             return result.stdout.trim();
+        }
+
+        /**
+         * Get the name of the branch at a remote
+         */
+        public remoteAt(remote: RemoteRef): BranchRef {
+            return BranchRef.fromName(`${remote.name}/${this.name}`);
         }
     };
 
@@ -174,24 +227,10 @@ export namespace git {
     }
 
     /**
-     * Get the feature branch prefix
+     * Merge one branch into the currently checked out branch
      */
-    export function featurePrefix() {
-        return config.get('gitflow.prefix.feature');
-    }
-
-    /**
-     * Get develop branch name
-     */
-    export function developBranch(): Promise<BranchRef> {
-        return config.get('gitflow.branch.develop').then(BranchRef.fromName);
-    }
-
-    /**
-     * Get the master branch name
-     */
-    export function masterBranch(): Promise<BranchRef> {
-        return config.get('gitflow.branch.master').then(BranchRef.fromName);
+    export function merge(other: BranchRef) {
+        return cmd.executeRequired('git', ['merge', '--no-ff', other.name]);
     }
 
     /**
@@ -211,11 +250,23 @@ export namespace git {
                     {
                         title: 'Pull now',
                         cb: async function () {
-                            git.pull(git.RemoteRef.fromName('origin'), a);
+                            git.pull(primaryRemote(), a);
                         },
                     },
                 ],
             });
         }
+    }
+
+    export const requireClean = async function() {
+        if (!(await isClean())) {
+            fail.error({
+                message: 'Unsaved changes detected. Please commit or stash your changes and try again'
+            });
+        }
+    }
+
+    export function primaryRemote() {
+        return RemoteRef.fromName('origin');
     }
 }

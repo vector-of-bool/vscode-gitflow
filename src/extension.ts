@@ -39,6 +39,19 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('gitflow.featureFinish', async function() {
             await runWrapped(flow.feature.finish);
         }),
+        vscode.commands.registerCommand('gitflow.releaseStart', async function() {
+            await runWrapped(flow.requireFlowEnabled);
+            const name = await vscode.window.showInputBox({
+                placeHolder: '1.6.2',
+                prompt: 'The name of the release',
+            });
+            if (!name)
+                return;
+            await runWrapped(flow.release.start, [name]);
+        }),
+        vscode.commands.registerCommand('gitflow.releaseFinish', async function() {
+            await runWrapped(flow.release.finish);
+        })
     ];
 
     context.subscriptions.push(...commands);
