@@ -27,6 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
             await runWrapped(flow.initialize);
         }),
         vscode.commands.registerCommand('gitflow.featureStart', async function () {
+            await runWrapped(flow.requireFlowEnabled);
             const name = await vscode.window.showInputBox({
                 placeHolder: 'my-awesome-feature',
                 prompt: 'A new name for your feature',
