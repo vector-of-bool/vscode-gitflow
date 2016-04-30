@@ -2,7 +2,7 @@
     "name": "gitflow",
     "displayName": "gitflow",
     "description": "Gitflow integration and support in Visual Studio Code",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "publisher": "vector-of-bool",
     "repository": {
         "type": "git",
@@ -36,22 +36,28 @@
     ],
     "main": "./out/src/extension",
     "contributes": {
-        "commands": [{
-            "command": "gitflow.initialize",
-            "title": "Gitflow: Initialize repository for gitflow"
-        }, {
-            "command": "gitflow.featureStart",
-            "title": "Gitflow: feature: start"
-        }, {
-            "command": "gitflow.featureFinish",
-            "title": "Gitflow: feature: finish"
-        }, {
-            "command": "gitflow.releaseStart",
-            "title": "Gitflow: release: start"
-        }, {
-            "command": "gitflow.releaseFinish",
-            "title": "Gitflow: release: finish"
-        }]
+        "commands": [
+            {
+                "command": "gitflow.initialize",
+                "title": "Gitflow: Initialize repository for gitflow"
+            },
+            {
+                "command": "gitflow.featureStart",
+                "title": "Gitflow: feature: start"
+            },
+            {
+                "command": "gitflow.featureFinish",
+                "title": "Gitflow: feature: finish"
+            },
+            {
+                "command": "gitflow.releaseStart",
+                "title": "Gitflow: release: start"
+            },
+            {
+                "command": "gitflow.releaseFinish",
+                "title": "Gitflow: release: finish"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "node ./node_modules/vscode/bin/compile",
