@@ -36,6 +36,9 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             await runWrapped(flow.feature.start, [name]);
         }),
+        vscode.commands.registerCommand('gitflow.featureRebase', async function() {
+            await runWrapped(flow.feature.rebase);
+        }),
         vscode.commands.registerCommand('gitflow.featureFinish', async function() {
             await runWrapped(flow.feature.finish);
         }),
@@ -51,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         vscode.commands.registerCommand('gitflow.releaseFinish', async function() {
             await runWrapped(flow.release.finish);
-        })
+        }),
     ];
 
     context.subscriptions.push(...commands);

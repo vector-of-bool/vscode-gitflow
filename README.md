@@ -11,6 +11,7 @@ gitflow features:
 
 - Repository initialization
 - Feature branches
+- Feature branch rebasing
 - Release branches
 - Release tagging
 
@@ -18,7 +19,6 @@ The following features are _**not yet**_ implemented:
 
 - Hotfix branches
 - Support branches
-- Branch rebasing
 
 It's incomplete, but the existing supported features should work.
 
