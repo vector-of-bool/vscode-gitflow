@@ -42,35 +42,43 @@
         "commands": [
             {
                 "command": "gitflow.initialize",
-                "title": "Gitflow: Initialize repository for gitflow"
+                "title": "Initialize repository for gitflow",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.featureStart",
-                "title": "Gitflow: feature: start"
+                "title": "Feature: start",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.featureRebase",
-                "title": "Gitflow: feature: rebase"
+                "title": "Feature: rebase",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.featureFinish",
-                "title": "Gitflow: feature: finish"
+                "title": "Feature: finish",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.releaseStart",
-                "title": "Gitflow: release: start"
+                "title": "Release: start",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.releaseFinish",
-                "title": "Gitflow: release: finish"
+                "title": "Release: finish",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.hotfixStart",
-                "title": "Gitflow: hotfix: start"
+                "title": "Hotfix: start",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.hotfixFinish",
-                "title": "Gitflow: hotfix: finish"
+                "title": "Hotfix: finish",
+                "category": "Gitflow"
             }
         ]
     },
