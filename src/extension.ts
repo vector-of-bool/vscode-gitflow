@@ -55,6 +55,18 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('gitflow.releaseFinish', async function() {
             await runWrapped(flow.release.finish);
         }),
+        vscode.commands.registerCommand('gitflow.hotfixStart', async function(){
+            await runWrapped(flow.requireFlowEnabled);
+            const name = await vscode.window.showInputBox({
+                prompt: 'The name of the hotfix version',
+            });
+            if (!name)
+                return;
+            await runWrapped(flow.hotfix.start, [name]);
+        }),
+        vscode.commands.registerCommand('gitflow.hotfixFinish', async function() {
+            await runWrapped(flow.hotfix.finish);
+        })
     ];
 
     context.subscriptions.push(...commands);

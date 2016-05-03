@@ -33,7 +33,9 @@
         "onCommand:gitflow.featureRebase",
         "onCommand:gitflow.featureFinish",
         "onCommand:gitflow.releaseStart",
-        "onCommand:gitflow.releaseFinish"
+        "onCommand:gitflow.releaseFinish",
+        "onCommand:gitflow.hotfixStart",
+        "onCommand:gitflow.hotfixFinish"
     ],
     "main": "./out/src/extension",
     "contributes": {
@@ -61,6 +63,14 @@
             {
                 "command": "gitflow.releaseFinish",
                 "title": "Gitflow: release: finish"
+            },
+            {
+                "command": "gitflow.hotfixStart",
+                "title": "Gitflow: hotfix: start"
+            },
+            {
+                "command": "gitflow.hotfixFinish",
+                "title": "Gitflow: hotfix: finish"
             }
         ]
     },
