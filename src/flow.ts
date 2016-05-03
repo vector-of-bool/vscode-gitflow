@@ -415,7 +415,8 @@ export namespace flow.release {
         await cmd.executeRequired('git', ['branch', '-d', branch.name]);
 
         const remote = git.primaryRemote();
-        if (await remote_develop.exists()) {
+        const remote_branch = branch.remoteAt(remote);
+        if (await remote_develop.exists() && await remote_branch.exists()) {
             await git.push(remote, develop);
             await git.push(remote, master);
             // Delete the remote branch
