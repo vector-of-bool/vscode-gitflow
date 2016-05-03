@@ -30,6 +30,7 @@
     "activationEvents": [
         "onCommand:gitflow.initialize",
         "onCommand:gitflow.featureStart",
+        "onCommand:gitflow.featureRebase",
         "onCommand:gitflow.featureFinish",
         "onCommand:gitflow.releaseStart",
         "onCommand:gitflow.releaseFinish"
@@ -44,6 +45,10 @@
             {
                 "command": "gitflow.featureStart",
                 "title": "Gitflow: feature: start"
+            },
+            {
+                "command": "gitflow.featureRebase",
+                "title": "Gitflow: feature: rebase"
             },
             {
                 "command": "gitflow.featureFinish",

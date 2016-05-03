@@ -14,13 +14,6 @@ export namespace flow {
     export const gitflowDir = path.join(gitDir, '.gitflow');
 
     /**
-     * Get the feature branch prefix
-     */
-    export function featurePrefix() {
-        return git.config.get('gitflow.prefix.feature');
-    }
-
-    /**
      * Get the release branch prefix
      */
     export function releasePrefix() {
@@ -157,10 +150,30 @@ export namespace flow {
 }
 
 export namespace flow.feature {
+    /**
+     * Get the feature branch prefix
+     */
+    export function prefix() {
+        return git.config.get('gitflow.prefix.feature');
+    }
+
+    /**
+     * Get the current feature branch as well as its name.
+     */
+    export const current = async function (msg: string = 'Not working on a feature branch') {
+        const current_branch = await git.currentBranch();
+        const prefix = await feature.prefix();
+        if (!current_branch || !current_branch.name.startsWith(prefix)) {
+            fail.error({ message: msg });
+        }
+        const name = current_branch.name.substr(prefix.length);
+        return { branch: current_branch, name: name };
+    }
+
     export const start = async function (feature_name: string) {
         console.assert(!!feature_name);
         await requireFlowEnabled();
-        const prefix = await featurePrefix();
+        const prefix = await feature.prefix();
         const new_branch = git.BranchRef.fromName(`${prefix}${feature_name}`);
         await requireNoSuchBranch(new_branch, {
             message: `The feature "${feature_name}" already exists`
@@ -177,12 +190,40 @@ export namespace flow.feature {
         vscode.window.showInformationMessage(`New branch ${new_branch.name}" was created`);
     }
 
-    export const finish = async function () {
-        const feature_branch = await git.currentBranch();
-        const feature_prefix = await featurePrefix();
-        if (!feature_branch || !feature_branch.name.startsWith(feature_prefix)) {
-            fail.error({ message: 'You must first checkout the feature branch you wish to finish' });
+    /**
+     * Rebase the current feature branch on develop
+     */
+    export const rebase = async function () {
+        await requireFlowEnabled();
+        const {
+            branch: feature_branch
+        } = await current(
+            'You must checkout the feature branch you wish to rebase on develop'
+        );
+        const develop = await developBranch();
+        await git.requireClean();
+        const result = await git.rebase({ branch: feature_branch, onto: develop });
+        if (result.retc) {
+            const abort_result = await cmd.executeRequired(
+                'git',
+                ['rebase', '--abort']
+            );
+            fail.error({
+                message: `Rebase command failed with exit code ${result.retc}. ` +
+                `The rebase has been aborted: Please perform this rebase from ` +
+                `the command line and resolve the appearing errors.`
+            });
         }
+        await vscode.window.showInformationMessage(`${feature_branch.name} has been rebased onto ${develop.name}`);
+    }
+
+    export const finish = async function () {
+        const {
+            branch: feature_branch,
+            name: feature_name
+        } = await current(
+            'You must checkout the feature branch you wish to finish'
+        );
 
         const is_clean = await git.isClean();
 
@@ -203,8 +244,6 @@ export namespace flow.feature {
                 fail.error({ message: 'You have merge conflicts! Resolve them before trying to finish feature branch.' });
             }
         }
-
-        const feature_name = feature_branch.name.substr(feature_prefix.length);
 
         await git.requireClean();
 
