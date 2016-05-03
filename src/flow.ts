@@ -200,7 +200,20 @@ export namespace flow.feature {
         } = await current(
             'You must checkout the feature branch you wish to rebase on develop'
         );
+
+        const remote = feature_branch.remoteAt(git.primaryRemote());
         const develop = await developBranch();
+        if (await remote.exists() && !(await git.isMerged(remote, develop))) {
+            const do_rebase = !!(await vscode.window.showWarningMessage(
+                `A remote branch for ${feature_branch.name} exists, and rebasing ` +
+                `will rewrite history for this branch that may be visible to ` +
+                `other users!`,
+                'Rebase anyway'
+            ));
+            if (!do_rebase)
+                return;
+        }
+
         await git.requireClean();
         const result = await git.rebase({ branch: feature_branch, onto: develop });
         if (result.retc) {
