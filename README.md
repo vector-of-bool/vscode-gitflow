@@ -4,6 +4,13 @@ This extension provides integration and support for [gitflow](http://nvie.com/po
 It is based on [this gitflow implementation](https://github.com/nvie/gitflow)
 and intends to be (but is not yet) fully compatible with it.
 
+# Change History
+
+### 0.0.5
+
+- Fixed missing push of ``master`` and tags after finishing a release or a
+  hotfix.
+
 ### Note
 
 This extension is still very new, but the existing supported features should work
