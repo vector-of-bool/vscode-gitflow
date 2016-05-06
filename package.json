@@ -2,7 +2,7 @@
     "name": "gitflow",
     "displayName": "gitflow",
     "description": "Gitflow integration and support in Visual Studio Code",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "publisher": "vector-of-bool",
     "repository": {
         "type": "git",
