@@ -414,13 +414,16 @@ export namespace flow.release {
         // Delete the release branch
         await cmd.executeRequired('git', ['branch', '-d', branch.name]);
 
-        const remote = git.primaryRemote();
-        const remote_branch = branch.remoteAt(remote);
-        if (await remote_develop.exists() && await remote_branch.exists()) {
+        if (await remote_develop.exists() && await remote_master.exists()) {
+            const remote = git.primaryRemote();
             await git.push(remote, develop);
             await git.push(remote, master);
-            // Delete the remote branch
-            await git.push(remote, git.BranchRef.fromName(':' + branch.name));
+            const remote_branch = branch.remoteAt(remote);
+            cmd.executeRequired('git', ['push', '--tags', remote.name]);
+            if (await remote_branch.exists()) {
+                // Delete the remote branch
+                await git.push(remote, git.BranchRef.fromName(':' + branch.name));
+            }
         }
 
         vscode.window.showInformationMessage(`The release "${release_name}" has been created. You are now on the ${develop.name} branch.`);
