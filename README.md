@@ -4,23 +4,17 @@ This extension provides integration and support for [gitflow](http://nvie.com/po
 It is based on [this gitflow implementation](https://github.com/nvie/gitflow)
 and intends to be (but is not yet) fully compatible with it.
 
-# IMPORTANT
+# Change History
 
-This is an *early version*, and it currently only supports the following basic
-gitflow features:
+### 0.0.5
 
-- Repository initialization
-- Feature branches
-- Release branches
-- Release tagging
+- Fixed missing push of ``master`` and tags after finishing a release or a
+  hotfix.
 
-The following features are _**not yet**_ implemented:
+### Note
 
-- Hotfix branches
-- Support branches
-- Branch rebasing
-
-It's incomplete, but the existing supported features should work.
+This extension is still very new, but the existing supported features should work
+without issue.
 
 Development is ongoing. Please help support this project by trying it out
 and submitting issues and feature requests to [the github page](https://github.com/vector-of-bool/vscode-gitflow).

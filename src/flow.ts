@@ -14,13 +14,6 @@ export namespace flow {
     export const gitflowDir = path.join(gitDir, '.gitflow');
 
     /**
-     * Get the feature branch prefix
-     */
-    export function featurePrefix() {
-        return git.config.get('gitflow.prefix.feature');
-    }
-
-    /**
      * Get the release branch prefix
      */
     export function releasePrefix() {
@@ -157,10 +150,30 @@ export namespace flow {
 }
 
 export namespace flow.feature {
+    /**
+     * Get the feature branch prefix
+     */
+    export function prefix() {
+        return git.config.get('gitflow.prefix.feature');
+    }
+
+    /**
+     * Get the current feature branch as well as its name.
+     */
+    export const current = async function (msg: string = 'Not working on a feature branch') {
+        const current_branch = await git.currentBranch();
+        const prefix = await feature.prefix();
+        if (!current_branch || !current_branch.name.startsWith(prefix)) {
+            fail.error({ message: msg });
+        }
+        const name = current_branch.name.substr(prefix.length);
+        return { branch: current_branch, name: name };
+    }
+
     export const start = async function (feature_name: string) {
         console.assert(!!feature_name);
         await requireFlowEnabled();
-        const prefix = await featurePrefix();
+        const prefix = await feature.prefix();
         const new_branch = git.BranchRef.fromName(`${prefix}${feature_name}`);
         await requireNoSuchBranch(new_branch, {
             message: `The feature "${feature_name}" already exists`
@@ -169,20 +182,61 @@ export namespace flow.feature {
         const remote_develop = git.BranchRef.fromName('origin/develop');
         const local_ref = await local_develop.ref();
         if (await remote_develop.exists()) {
-            git.requireEqual(local_develop, remote_develop, true);
+            await git.requireEqual(local_develop, remote_develop, true);
         }
 
         // Create our new branch
         await cmd.executeRequired('git', ['checkout', '-b', new_branch.name, local_develop.name]);
-        vscode.window.showInformationMessage(`New branch :${new_branch.name}" was created`);
+        vscode.window.showInformationMessage(`New branch ${new_branch.name}" was created`);
+    }
+
+    /**
+     * Rebase the current feature branch on develop
+     */
+    export const rebase = async function () {
+        await requireFlowEnabled();
+        const {
+            branch: feature_branch
+        } = await current(
+            'You must checkout the feature branch you wish to rebase on develop'
+        );
+
+        const remote = feature_branch.remoteAt(git.primaryRemote());
+        const develop = await developBranch();
+        if (await remote.exists() && !(await git.isMerged(remote, develop))) {
+            const do_rebase = !!(await vscode.window.showWarningMessage(
+                `A remote branch for ${feature_branch.name} exists, and rebasing ` +
+                `will rewrite history for this branch that may be visible to ` +
+                `other users!`,
+                'Rebase anyway'
+            ));
+            if (!do_rebase)
+                return;
+        }
+
+        await git.requireClean();
+        const result = await git.rebase({ branch: feature_branch, onto: develop });
+        if (result.retc) {
+            const abort_result = await cmd.executeRequired(
+                'git',
+                ['rebase', '--abort']
+            );
+            fail.error({
+                message: `Rebase command failed with exit code ${result.retc}. ` +
+                `The rebase has been aborted: Please perform this rebase from ` +
+                `the command line and resolve the appearing errors.`
+            });
+        }
+        await vscode.window.showInformationMessage(`${feature_branch.name} has been rebased onto ${develop.name}`);
     }
 
     export const finish = async function () {
-        const feature_branch = await git.currentBranch();
-        const feature_prefix = await featurePrefix();
-        if (!feature_branch || !feature_branch.name.startsWith(feature_prefix)) {
-            fail.error({ message: 'You must first checkout the feature branch you wish to finish' });
-        }
+        const {
+            branch: feature_branch,
+            name: feature_name
+        } = await current(
+            'You must checkout the feature branch you wish to finish'
+        );
 
         const is_clean = await git.isClean();
 
@@ -204,21 +258,19 @@ export namespace flow.feature {
             }
         }
 
-        const feature_name = feature_branch.name.substr(feature_prefix.length);
-
         await git.requireClean();
 
         const all_branches = await git.BranchRef.all();
         // Make sure that the local feature and the remote feature haven't diverged
         const remote_branch = all_branches.find(br => br.name === 'origin/' + feature_branch.name);
         if (remote_branch) {
-            git.requireEqual(feature_branch, remote_branch, true);
+            await git.requireEqual(feature_branch, remote_branch, true);
         }
         // Make sure the local develop and remote develop haven't diverged either
         const develop = await developBranch();
         const remote_develop = git.BranchRef.fromName('origin/' + develop.name);
         if (await remote_develop.exists()) {
-            git.requireEqual(develop, remote_develop, true);
+            await git.requireEqual(develop, remote_develop, true);
         }
 
         // Switch to develop and merge in the feature branch
@@ -249,9 +301,7 @@ export namespace flow.feature {
 export namespace flow.release {
     export const current = async function () {
         const branches = await git.BranchRef.all();
-
         const prefix = await releasePrefix();
-
         return branches.find(br => br.name.startsWith(prefix));
     }
 
@@ -269,7 +319,7 @@ export namespace flow.release {
         const develop = await developBranch();
         const remote_develop = develop.remoteAt(git.primaryRemote());
         if (await remote_develop.exists()) {
-            git.requireEqual(develop, remote_develop);
+            await git.requireEqual(develop, remote_develop);
         }
 
         const tag = git.TagRef.fromName(name);
@@ -295,16 +345,25 @@ export namespace flow.release {
         if (!current_release) {
             fail.error({ message: 'No active release branch to finish' });
         }
+        await finalizeWithBranch(
+            await releasePrefix(),
+            current_release,
+            finish
+        );
+    }
+
+    export const finalizeWithBranch = async function(rel_prefix: string, branch: git.BranchRef, reenter: Function) {
+        await requireFlowEnabled();
         const current_branch = await git.currentBranch();
-        if (current_branch.name !== current_release.name) {
+        if (current_branch.name !== branch.name) {
             fail.error({
-                message: `You are not currently on the release branch "${current_release.name}`,
+                message: `You are not currently on the "${branch.name}" branch`,
                 handlers: [
                     {
-                        title: `Checkout ${current_release.name} and continue.`,
+                        title: `Checkout ${branch.name} and continue.`,
                         cb: async function () {
-                            await git.checkout(current_release);
-                            await finish();
+                            await git.checkout(branch);
+                            await reenter();
                         }
                     }
                 ]
@@ -316,17 +375,17 @@ export namespace flow.release {
         const master = await masterBranch();
         const remote_master = master.remoteAt(git.primaryRemote());
         if (await remote_master.exists()) {
-            git.requireEqual(master, remote_master);
+            await git.requireEqual(master, remote_master);
         }
 
         const develop = await developBranch();
         const remote_develop = develop.remoteAt(git.primaryRemote());
         if (await remote_develop.exists()) {
-            git.requireEqual(develop, remote_develop);
+            await git.requireEqual(develop, remote_develop);
         }
 
 
-        // Get the name of the tag we will use. Default is the release name
+        // Get the name of the tag we will use. Default is the branch's flow name
         const tag_message = await vscode.window.showInputBox({
             prompt: 'Enter a tag message (optional)',
         });
@@ -336,34 +395,102 @@ export namespace flow.release {
         // Now the crux of the logic, after we've done all our sanity checking
         await git.checkout(master);
 
-        // Merge the release into the master branch
-        if (!(await git.isMerged(current_release, master))) {
-            await git.merge(current_release);
+        // Merge the branch into the master branch
+        if (!(await git.isMerged(branch, master))) {
+            await git.merge(branch);
         }
 
         // Create a tag for the release
-        const rel_prefix = await releasePrefix();
         const tag_prefix = await tagPrefix();
-        const release_name = current_release.name.substr(rel_prefix.length);
+        const release_name = branch.name.substr(rel_prefix.length);
         await cmd.executeRequired('git', ['tag', '-m', tag_message, release_name, master.name]);
 
         // Merge the release into develop
         await git.checkout(develop);
-        if (!(await git.isMerged(current_release, develop))) {
-            await git.merge(current_release);
+        if (!(await git.isMerged(branch, develop))) {
+            await git.merge(branch);
         }
 
         // Delete the release branch
-        await cmd.executeRequired('git', ['branch', '-d', current_release.name]);
+        await cmd.executeRequired('git', ['branch', '-d', branch.name]);
 
-        const remote = git.primaryRemote();
-        if (await remote_develop.exists()) {
+        if (await remote_develop.exists() && await remote_master.exists()) {
+            const remote = git.primaryRemote();
             await git.push(remote, develop);
             await git.push(remote, master);
-            // Delete the remote branch
-            await git.push(remote, git.BranchRef.fromName(':' + current_release.name));
+            const remote_branch = branch.remoteAt(remote);
+            cmd.executeRequired('git', ['push', '--tags', remote.name]);
+            if (await remote_branch.exists()) {
+                // Delete the remote branch
+                await git.push(remote, git.BranchRef.fromName(':' + branch.name));
+            }
         }
 
         vscode.window.showInformationMessage(`The release "${release_name}" has been created. You are now on the ${develop.name} branch.`);
+    }
+}
+
+export namespace flow.hotfix {
+    /**
+     * Get the hotfix branch prefix
+     */
+    export function prefix() {
+        return git.config.get('gitflow.prefix.hotfix');
+    }
+
+    /**
+     * Get the current hotfix branch, or null if there is nonesuch
+     */
+    export const current = async function () {
+        const branches = await git.BranchRef.all();
+        const prefix = await hotfix.prefix();
+        return branches.find(br => br.name.startsWith(prefix));
+    }
+
+    export const start = async function (name: string) {
+        await requireFlowEnabled();
+        const current_hotfix = await current();
+        if (!!current_hotfix) {
+            fail.error({
+                message: `There is an existing hotfix branch "${current_hotfix.name}". Finish that one first.`
+            });
+        }
+
+        await git.requireClean();
+
+        const master = await masterBranch();
+        const remote_master = master.remoteAt(git.primaryRemote());
+        if (await remote_master.exists()) {
+            await git.requireEqual(master, remote_master);
+        }
+
+        const tag = git.TagRef.fromName(name);
+        if (await tag.exists()) {
+            fail.error({
+                message: `The tag "${tag.name}" is an existing tag. Choose another hotfix name.`
+            });
+        }
+
+        const prefix = await hotfix.prefix();
+        const new_branch = git.BranchRef.fromName(`${prefix}${name}`)
+        if (await new_branch.exists()) {
+            fail.error({
+                message: `"${new_branch.name}" is the name of an existing branch`
+            });
+        }
+        await cmd.executeRequired('git', ['checkout', '-b', new_branch.name, master.name]);
+    }
+
+    export const finish = async function () {
+        await requireFlowEnabled();
+        const current_hotfix = await hotfix.current();
+        if (!current_hotfix) {
+            fail.error({ message: 'No active hotfix branch to finish' });
+        }
+        await release.finalizeWithBranch(
+            await prefix(),
+            current_hotfix,
+            finish
+        );
     }
 }

@@ -233,6 +233,18 @@ export namespace git {
         return cmd.executeRequired('git', ['merge', '--no-ff', other.name]);
     }
 
+    interface IRebaseParameters {
+        branch: BranchRef;
+        onto: BranchRef;
+    };
+
+    /**
+     * Rebase one branch onto another
+     */
+    export function rebase(args: IRebaseParameters) {
+        return cmd.executeRequired('git', ['rebase', args.onto.name, args.branch.name]);
+    }
+
     /**
      * Require that two branches point to the same commit.
      *

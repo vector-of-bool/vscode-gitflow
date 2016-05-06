@@ -2,7 +2,7 @@
     "name": "gitflow",
     "displayName": "gitflow",
     "description": "Gitflow integration and support in Visual Studio Code",
-    "version": "0.0.2",
+    "version": "0.0.5",
     "publisher": "vector-of-bool",
     "repository": {
         "type": "git",
@@ -30,32 +30,55 @@
     "activationEvents": [
         "onCommand:gitflow.initialize",
         "onCommand:gitflow.featureStart",
+        "onCommand:gitflow.featureRebase",
         "onCommand:gitflow.featureFinish",
         "onCommand:gitflow.releaseStart",
-        "onCommand:gitflow.releaseFinish"
+        "onCommand:gitflow.releaseFinish",
+        "onCommand:gitflow.hotfixStart",
+        "onCommand:gitflow.hotfixFinish"
     ],
     "main": "./out/src/extension",
     "contributes": {
         "commands": [
             {
                 "command": "gitflow.initialize",
-                "title": "Gitflow: Initialize repository for gitflow"
+                "title": "Initialize repository for gitflow",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.featureStart",
-                "title": "Gitflow: feature: start"
+                "title": "Feature: start",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.featureRebase",
+                "title": "Feature: rebase",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.featureFinish",
-                "title": "Gitflow: feature: finish"
+                "title": "Feature: finish",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.releaseStart",
-                "title": "Gitflow: release: start"
+                "title": "Release: start",
+                "category": "Gitflow"
             },
             {
                 "command": "gitflow.releaseFinish",
-                "title": "Gitflow: release: finish"
+                "title": "Release: finish",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.hotfixStart",
+                "title": "Hotfix: start",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.hotfixFinish",
+                "title": "Hotfix: finish",
+                "category": "Gitflow"
             }
         ]
     },
