@@ -25,7 +25,7 @@ $ git init
 
 ### 0.0.5
 
-- Fixed missing push of ``master`` and tags after finishing a release or agitflow
+- Fixed missing push of ``master`` and tags after finishing a release or a
   hotfix.
 
 ### Note
