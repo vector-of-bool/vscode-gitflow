@@ -4,6 +4,23 @@ This extension provides integration and support for [gitflow](http://nvie.com/po
 It is based on [this gitflow implementation](https://github.com/nvie/gitflow)
 and intends to be (but is not yet) fully compatible with it.
 
+# Getting Started
+First, initialize git
+```sh
+$ git init
+```
+- Open the VS Code Command Palette and type 'gitflow'
+![Alt text](res/gitflow.png)
+
+- Select 'Initialize repository for gitflow'
+![Alt text](res/step1.png)
+
+- Follow the command prompts and accept the defaults...
+![Alt text](res/defaults.png)
+
+- Setup complete! 
+
+
 # Change History
 
 ### 0.0.5
