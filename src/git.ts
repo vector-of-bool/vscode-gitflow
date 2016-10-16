@@ -17,7 +17,7 @@ export namespace git {
 
     export namespace config {
         /// Get a git config value
-        export const get = async function (setting: string): Promise<string> {
+        export const get = async function (setting: string): Promise<string|null> {
             const result = await cmd.execute('git', ['config', '--get', setting]);
             if (result.retc) {
                 return null;
@@ -56,7 +56,7 @@ export namespace git {
                     if (!(name in acc))
                         acc.push(name);
                     return acc;
-                }, [])
+                }, [] as string[])
                 .map(name => new TagRef(name));
         }
 
@@ -104,7 +104,7 @@ export namespace git {
                     if (!(name in acc))
                         acc.push(name);
                     return acc;
-                }, [])
+                }, [] as string[])
                 .map(name => new BranchRef(name));
         }
 
@@ -152,7 +152,7 @@ export namespace git {
     /**
      * Get a reference to the currently checked out branch
      */
-    export const currentBranch = async function (): Promise<BranchRef> {
+    export const currentBranch = async function (): Promise<BranchRef|null> {
         const result = await cmd.executeRequired('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
         const name = result.stdout.trim();
         if (name === 'HEAD') {

@@ -68,6 +68,18 @@ export namespace flow {
         }
     }
 
+    export function throwNotInitializedError(): never {
+        throw fail.error({
+            message: 'Gitflow has not been initialized for this repository',
+            handlers: [{
+                title: 'Initialize',
+                cb() {
+                    return flow.initialize();
+                }
+            }]
+        });
+    }
+
     export const initialize = async function () {
         if (await flowEnabled()) {
             const do_reinit = !!(await vscode.window.showWarningMessage(
@@ -78,7 +90,7 @@ export namespace flow {
                 return;
         }
 
-        const branchNonEmpty = str => !!str ? null : "A branch name is required"
+        const branchNonEmpty = str => !!str ? '' : "A branch name is required"
         const master_name = await vscode.window.showInputBox({
             prompt: "Enter a name for the production branch",
             value: 'master',
@@ -163,8 +175,11 @@ export namespace flow.feature {
     export const current = async function (msg: string = 'Not working on a feature branch') {
         const current_branch = await git.currentBranch();
         const prefix = await feature.prefix();
+        if (!prefix) {
+            throw throwNotInitializedError();
+        }
         if (!current_branch || !current_branch.name.startsWith(prefix)) {
-            fail.error({ message: msg });
+            throw fail.error({ message: msg });
         }
         const name = current_branch.name.substr(prefix.length);
         return { branch: current_branch, name: name };
@@ -302,6 +317,9 @@ export namespace flow.release {
     export const current = async function () {
         const branches = await git.BranchRef.all();
         const prefix = await releasePrefix();
+        if (!prefix) {
+            throw throwNotInitializedError();
+        }
         return branches.find(br => br.name.startsWith(prefix));
     }
 
@@ -341,12 +359,16 @@ export namespace flow.release {
 
     export const finish = async function () {
         await requireFlowEnabled();
+        const prefix = await releasePrefix();
+        if (!prefix) {
+            throw throwNotInitializedError();
+        }
         const current_release = await release.current();
         if (!current_release) {
-            fail.error({ message: 'No active release branch to finish' });
+            throw fail.error({ message: 'No active release branch to finish' });
         }
         await finalizeWithBranch(
-            await releasePrefix(),
+            prefix,
             current_release,
             finish
         );
@@ -355,6 +377,11 @@ export namespace flow.release {
     export const finalizeWithBranch = async function(rel_prefix: string, branch: git.BranchRef, reenter: Function) {
         await requireFlowEnabled();
         const current_branch = await git.currentBranch();
+        if (!current_branch) {
+            throw fail.error({
+                message: 'Unbale to detect a current git branch.'
+            });
+        }
         if (current_branch.name !== branch.name) {
             fail.error({
                 message: `You are not currently on the "${branch.name}" branch`,
@@ -367,7 +394,7 @@ export namespace flow.release {
                         }
                     }
                 ]
-            })
+            });
         }
 
         await git.requireClean();
@@ -444,6 +471,9 @@ export namespace flow.hotfix {
     export const current = async function () {
         const branches = await git.BranchRef.all();
         const prefix = await hotfix.prefix();
+        if (!prefix) {
+            throw throwNotInitializedError();
+        }
         return branches.find(br => br.name.startsWith(prefix));
     }
 
@@ -483,12 +513,16 @@ export namespace flow.hotfix {
 
     export const finish = async function () {
         await requireFlowEnabled();
+        const prefix = await hotfix.prefix();
+        if (!prefix) {
+            throw throwNotInitializedError();
+        }
         const current_hotfix = await hotfix.current();
         if (!current_hotfix) {
-            fail.error({ message: 'No active hotfix branch to finish' });
+            throw fail.error({ message: 'No active hotfix branch to finish' });
         }
         await release.finalizeWithBranch(
-            await prefix(),
+            prefix,
             current_hotfix,
             finish
         );

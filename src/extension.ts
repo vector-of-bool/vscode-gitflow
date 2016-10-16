@@ -3,11 +3,11 @@
 import * as vscode from 'vscode';
 
 import {flow} from './flow';
-import {fail} from './fail.ts'
+import {fail} from './fail'
 
 
 export function activate(context: vscode.ExtensionContext) {
-    const runWrapped = async function<T>(fn: (...any) => Thenable<T>, args: any[] = []): Promise<T> {
+    const runWrapped = async function<T>(fn: (...any) => Thenable<T>, args: any[] = []): Promise<T|null> {
         try {
             return await fn(...args);
         } catch(e) {
@@ -15,10 +15,11 @@ export function activate(context: vscode.ExtensionContext) {
                 throw e;
 
             const err: fail.IError = e;
-            const chosen = await vscode.window.showErrorMessage(err.message, ...err.handlers);
+            const chosen = await vscode.window.showErrorMessage(err.message, ...(err.handlers || []));
             if (!!chosen) {
                 return await runWrapped(chosen.cb);
             }
+            return null;
         }
     };
 

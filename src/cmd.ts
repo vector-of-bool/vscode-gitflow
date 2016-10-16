@@ -5,14 +5,14 @@ import * as proc from 'child_process';
 import {fail} from './fail';
 
 export namespace cmd {
-    export interface IExecutionResult {
+    export interface ExecutionResult {
         retc: number;
         stdout: string;
         stderr: string;
     };
 
-    export function execute(command: string, args: string[], options?: proc.SpawnOptions): Promise<IExecutionResult> {
-        return new Promise<IExecutionResult>((resolve, reject) => {
+    export function execute(command: string, args: string[], options?: proc.SpawnOptions): Promise<ExecutionResult> {
+        return new Promise<ExecutionResult>((resolve, reject) => {
             options = options || {};
             options.cwd = options.cwd || vscode.workspace.rootPath;
             console.log(`[gitflow] Execute ${command}`, args.join(' '));
@@ -35,9 +35,9 @@ export namespace cmd {
         });
     };
 
-    export const executeRequired = async function (command: string, args: string[], options?: proc.SpawnOptions): Promise<IExecutionResult> {
+    export const executeRequired = async function (command: string, args: string[], options?: proc.SpawnOptions): Promise<ExecutionResult> {
         const result = await execute(command, args, options);
-        if (!result) {
+        if (result.retc !== 0) {
             fail.error({message: `"${command}" returned status ${result.retc}`});
         }
         return result;
