@@ -192,11 +192,11 @@ export namespace git {
      * Check if we have any unsaved changes
      */
     export const isClean = async function (): Promise<boolean> {
-        const diff_res = await cmd.executeRequired('git', ['diff', '--no-ext-diff', '--ignore-submodules', '--quiet', '--exit-code']);
+        const diff_res = await cmd.execute('git', ['diff', '--no-ext-diff', '--ignore-submodules', '--quiet', '--exit-code']);
         if (!!diff_res.retc) {
             return false;
         }
-        const diff_index_res = await cmd.executeRequired('git', ['diff-index', '--cached', '--quiet', '--ignore-submodules', 'HEAD', '--']);
+        const diff_index_res = await cmd.execute('git', ['diff-index', '--cached', '--quiet', '--ignore-submodules', 'HEAD', '--']);
         if (!!diff_index_res.retc) {
             return false;
         }

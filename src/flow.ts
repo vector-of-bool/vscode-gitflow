@@ -8,6 +8,7 @@ import {fail} from './fail';
 import {git} from './git';
 import {cmd} from './cmd';
 import {fs} from './fs';
+import {config} from './config';
 
 export namespace flow {
     export const gitDir = path.join(vscode.workspace.rootPath, '.git');
@@ -93,13 +94,13 @@ export namespace flow {
         const branchNonEmpty = str => !!str ? '' : "A branch name is required"
         const master_name = await vscode.window.showInputBox({
             prompt: "Enter a name for the production branch",
-            value: 'master',
+            value: config.default_production,
             validateInput: branchNonEmpty,
         });
         if (!master_name) return;
         const develop_name = await vscode.window.showInputBox({
             prompt: 'Enter a name for the development branch',
-            value: 'develop',
+            value: config.default_development,
             validateInput: branchNonEmpty,
         });
         if (!develop_name) return;
@@ -193,8 +194,8 @@ export namespace flow.feature {
         await requireNoSuchBranch(new_branch, {
             message: `The feature "${feature_name}" already exists`
         });
-        const local_develop = git.BranchRef.fromName('develop');
-        const remote_develop = git.BranchRef.fromName('origin/develop');
+        const local_develop = await developBranch();
+        const remote_develop = git.BranchRef.fromName(`origin/${local_develop.name}`);
         const local_ref = await local_develop.ref();
         if (await remote_develop.exists()) {
             await git.requireEqual(local_develop, remote_develop, true);
@@ -304,11 +305,13 @@ export namespace flow.feature {
         console.assert(await git.isClean());
         const origin = git.RemoteRef.fromName('origin');
         const remote = git.BranchRef.fromName(origin.name + '/' + branch.name);
-        if (await remote.exists()) {
-            // Delete the branch on the remote
-            await git.push(git.RemoteRef.fromName('origin'), git.BranchRef.fromName(':refs/heads/' + branch.name));
+        if (config.deleteBranchOnFinish) {
+            if (config.deleteRemoteBranches && await remote.exists()) {
+                // Delete the branch on the remote
+                await git.push(git.RemoteRef.fromName('origin'), git.BranchRef.fromName(`:refs/heads/${branch.name}`));
+            }
+            await cmd.executeRequired('git', ['branch', '-d', branch.name]);
         }
-        await cmd.executeRequired('git', ['branch', '-d', branch.name]);
         vscode.window.showInformationMessage(`Feature branch ${branch.name} has been closed`);
     }
 }
@@ -438,20 +441,22 @@ export namespace flow.release {
             await git.merge(branch);
         }
 
-        // Delete the release branch
-        await cmd.executeRequired('git', ['branch', '-d', branch.name]);
-
-        if (await remote_develop.exists() && await remote_master.exists()) {
-            const remote = git.primaryRemote();
-            await git.push(remote, develop);
-            await git.push(remote, master);
-            const remote_branch = branch.remoteAt(remote);
-            cmd.executeRequired('git', ['push', '--tags', remote.name]);
-            if (await remote_branch.exists()) {
-                // Delete the remote branch
-                await git.push(remote, git.BranchRef.fromName(':' + branch.name));
+        if (config.deleteBranchOnFinish) {
+            // Delete the release branch
+            await cmd.executeRequired('git', ['branch', '-d', branch.name]);
+            if (config.deleteRemoteBranches && await remote_develop.exists() && await remote_master.exists()) {
+                const remote = git.primaryRemote();
+                await git.push(remote, develop);
+                await git.push(remote, master);
+                const remote_branch = branch.remoteAt(remote);
+                cmd.executeRequired('git', ['push', '--tags', remote.name]);
+                if (await remote_branch.exists()) {
+                    // Delete the remote branch
+                    await git.push(remote, git.BranchRef.fromName(':' + branch.name));
+                }
             }
         }
+
 
         vscode.window.showInformationMessage(`The release "${release_name}" has been created. You are now on the ${develop.name} branch.`);
     }
