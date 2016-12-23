@@ -80,7 +80,21 @@
                 "title": "Hotfix: finish",
                 "category": "Gitflow"
             }
-        ]
+        ],
+        "configuration": {
+            "properties": {
+                "gitflow.deleteBranchOnFinish": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "After finishing a branch, delete the branch"
+                },
+                "gitflow.deleteRemoteBranches": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "If true, and `gitflow.deleteBranchOnFinish` is true, remote branches will be deleted when finishing a branch"
+                }
+            }
+        }
     },
     "scripts": {
         "vscode:prepublish": "tsc -p ./",
