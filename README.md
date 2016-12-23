@@ -27,19 +27,6 @@ $ git init
 
 5. Setup complete!
 
-
-# Change History
-
-### 0.1.0
-
-- Update to TypeScript 2.0 and enforce strict `null` checks. May now catch some
-  latent issues.
-
-### 0.0.5
-
-- Fixed missing push of ``master`` and tags after finishing a release or a
-  hotfix.
-
 ### Note
 
 Development is ongoing. Please help support this project by trying it out
