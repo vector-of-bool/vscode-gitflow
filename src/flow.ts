@@ -194,10 +194,8 @@ export namespace flow.feature {
         await requireNoSuchBranch(new_branch, {
             message: `The feature "${feature_name}" already exists`
         });
-        const develop_name = await git.config.get('gitflow.branch.develop');
-
-        const local_develop = git.BranchRef.fromName(develop_name || 'develop');
-        const remote_develop = git.BranchRef.fromName(`origin/${develop_name || 'develop'}`);
+        const local_develop = await developBranch();
+        const remote_develop = git.BranchRef.fromName(`origin/${local_develop.name}`);
         const local_ref = await local_develop.ref();
         if (await remote_develop.exists()) {
             await git.requireEqual(local_develop, remote_develop, true);
