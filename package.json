@@ -92,6 +92,16 @@
                     "type": "boolean",
                     "default": true,
                     "description": "If true, and `gitflow.deleteBranchOnFinish` is true, remote branches will be deleted when finishing a branch"
+                },
+                "gitflow.default.development": {
+                    "type": "string",
+                    "default": "develop",
+                    "description": "Default name for the development branch [develop]"
+                },
+                "gitflow.default.production": {
+                    "type": "string",
+                    "default": "master",
+                    "description": "Default name for the production branch [master]"
                 }
             }
         }

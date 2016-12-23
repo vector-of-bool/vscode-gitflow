@@ -12,6 +12,14 @@ class ConfigReader {
     get deleteRemoteBranches(): boolean {
         return this._readConfig<boolean>('deleteRemoteBranches');
     }
+
+    get default_development(): string {
+        return this._readConfig<string>('default.development');
+    }
+
+    get default_production(): string {
+        return this._readConfig<string>('default.production');
+    }
 }
 
 export const config = new ConfigReader();

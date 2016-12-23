@@ -94,13 +94,13 @@ export namespace flow {
         const branchNonEmpty = str => !!str ? '' : "A branch name is required"
         const master_name = await vscode.window.showInputBox({
             prompt: "Enter a name for the production branch",
-            value: 'master',
+            value: config.default_production,
             validateInput: branchNonEmpty,
         });
         if (!master_name) return;
         const develop_name = await vscode.window.showInputBox({
             prompt: 'Enter a name for the development branch',
-            value: 'develop',
+            value: config.default_development,
             validateInput: branchNonEmpty,
         });
         if (!develop_name) return;
