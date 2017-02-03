@@ -82,6 +82,7 @@ export namespace flow {
     }
 
     export const initialize = async function () {
+        console.log("Init");
         if (await flowEnabled()) {
             const do_reinit = !!(await vscode.window.showWarningMessage(
                 'Gitflow has already been initialized for this repository. Would you like to re-initialize?',
@@ -117,19 +118,19 @@ export namespace flow {
         const remote_master = git.BranchRef.fromName('origin/' + master_name);
 
         // Check if the repository needs to be initialized before we proceed
-        if (!!(await cmd.execute('git', ['rev-parse', '--quiet', '--verify', 'HEAD'])).retc) {
-            await cmd.executeRequired('git', ['symbolic-ref', 'HEAD', `refs/head/${master.name}`]);
-            await cmd.executeRequired('git', ['commit', '--allow-empty', '--quiet', '-m', 'Initial commit']);
+        if (!!(await cmd.execute(git.info.path, ['rev-parse', '--quiet', '--verify', 'HEAD'])).retc) {
+            await cmd.executeRequired(git.info.path, ['symbolic-ref', 'HEAD', `refs/head/${master.name}`]);
+            await cmd.executeRequired(git.info.path, ['commit', '--allow-empty', '--quiet', '-m', 'Initial commit']);
         }
 
         // Ensure the develop branch exists
         if (!(await develop.exists())) {
             if (await remote_develop.exists()) {
                 // If there is a remote with the branch, set up our local copy to track that one
-                cmd.executeRequired('git', ['branch', develop.name, remote_develop.name]);
+                cmd.executeRequired(git.info.path, ['branch', develop.name, remote_develop.name]);
             } else {
                 // Otherwise, create it on top of the master branch
-                cmd.executeRequired('git', ['branch', '--no-track', develop.name, master.name]);
+                cmd.executeRequired(git.info.path, ['branch', '--no-track', develop.name, master.name]);
             }
             // Checkout develop since we just created it
             await git.checkout(develop);
@@ -202,7 +203,7 @@ export namespace flow.feature {
         }
 
         // Create our new branch
-        await cmd.executeRequired('git', ['checkout', '-b', new_branch.name, local_develop.name]);
+        await cmd.executeRequired(git.info.path, ['checkout', '-b', new_branch.name, local_develop.name]);
         vscode.window.showInformationMessage(`New branch ${new_branch.name}" was created`);
     }
 
@@ -234,7 +235,7 @@ export namespace flow.feature {
         const result = await git.rebase({ branch: feature_branch, onto: develop });
         if (result.retc) {
             const abort_result = await cmd.executeRequired(
-                'git',
+                git.info.path,
                 ['rebase', '--abort']
             );
             fail.error({
@@ -291,7 +292,7 @@ export namespace flow.feature {
 
         // Switch to develop and merge in the feature branch
         await git.checkout(develop);
-        const result = await cmd.execute('git', ['merge', '--no-ff', feature_branch.name]);
+        const result = await cmd.execute(git.info.path, ['merge', '--no-ff', feature_branch.name]);
         if (result.retc) {
             // Merge conflict. Badness
             await fs.writeFile(gitflowDir, develop.name);
@@ -310,7 +311,7 @@ export namespace flow.feature {
                 // Delete the branch on the remote
                 await git.push(git.RemoteRef.fromName('origin'), git.BranchRef.fromName(`:refs/heads/${branch.name}`));
             }
-            await cmd.executeRequired('git', ['branch', '-d', branch.name]);
+            await cmd.executeRequired(git.info.path, ['branch', '-d', branch.name]);
         }
         vscode.window.showInformationMessage(`Feature branch ${branch.name} has been closed`);
     }
@@ -352,7 +353,7 @@ export namespace flow.release {
 
         const prefix = await releasePrefix();
         const new_branch = git.BranchRef.fromName(`${prefix}${name}`);
-        await cmd.executeRequired('git', ['checkout', '-b', new_branch.name, develop.name]);
+        await cmd.executeRequired(git.info.path, ['checkout', '-b', new_branch.name, develop.name]);
         await vscode.window.showInformationMessage(
             `New branch ${new_branch.name} has been created. ` +
             `Now is the time to update your version numbers and fix any ` +
@@ -433,7 +434,7 @@ export namespace flow.release {
         // Create a tag for the release
         const tag_prefix = await tagPrefix();
         const release_name = branch.name.substr(rel_prefix.length);
-        await cmd.executeRequired('git', ['tag', '-m', tag_message, release_name, master.name]);
+        await cmd.executeRequired(git.info.path, ['tag', '-m', tag_message, release_name, master.name]);
 
         // Merge the release into develop
         await git.checkout(develop);
@@ -443,13 +444,13 @@ export namespace flow.release {
 
         if (config.deleteBranchOnFinish) {
             // Delete the release branch
-            await cmd.executeRequired('git', ['branch', '-d', branch.name]);
+            await cmd.executeRequired(git.info.path, ['branch', '-d', branch.name]);
             if (config.deleteRemoteBranches && await remote_develop.exists() && await remote_master.exists()) {
                 const remote = git.primaryRemote();
                 await git.push(remote, develop);
                 await git.push(remote, master);
                 const remote_branch = branch.remoteAt(remote);
-                cmd.executeRequired('git', ['push', '--tags', remote.name]);
+                cmd.executeRequired(git.info.path, ['push', '--tags', remote.name]);
                 if (await remote_branch.exists()) {
                     // Delete the remote branch
                     await git.push(remote, git.BranchRef.fromName(':' + branch.name));
@@ -513,7 +514,7 @@ export namespace flow.hotfix {
                 message: `"${new_branch.name}" is the name of an existing branch`
             });
         }
-        await cmd.executeRequired('git', ['checkout', '-b', new_branch.name, master.name]);
+        await cmd.executeRequired(git.info.path, ['checkout', '-b', new_branch.name, master.name]);
     }
 
     export const finish = async function () {

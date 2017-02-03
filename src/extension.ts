@@ -1,28 +1,31 @@
 'use strict';
 
 import * as vscode from 'vscode';
-
+import {findGit, git} from "./git";
 import {flow} from './flow';
 import {fail} from './fail'
 
+const runWrapped = async function<T>(fn: (...any) => Thenable<T>, args: any[] = []): Promise<T|null> {
+    try {
+        return await fn(...args);
+    } catch(e) {
+        if (!e.handlers || !e.message)
+            throw e;
 
-export function activate(context: vscode.ExtensionContext) {
-    const runWrapped = async function<T>(fn: (...any) => Thenable<T>, args: any[] = []): Promise<T|null> {
-        try {
-            return await fn(...args);
-        } catch(e) {
-            if (!e.handlers || !e.message)
-                throw e;
-
-            const err: fail.IError = e;
-            const chosen = await vscode.window.showErrorMessage(err.message, ...(err.handlers || []));
-            if (!!chosen) {
-                return await runWrapped(chosen.cb);
-            }
-            return null;
+        const err: fail.IError = e;
+        const chosen = await vscode.window.showErrorMessage(err.message, ...(err.handlers || []));
+        if (!!chosen) {
+            return await runWrapped(chosen.cb);
         }
-    };
+        return null;
+    }
+};
 
+
+async function setup(context) {
+    const pathHint = vscode.workspace.getConfiguration('git').get<string>('path');
+	git.info = await findGit(pathHint);
+    console.log("Info set")
     const commands = [
         vscode.commands.registerCommand('gitflow.initialize', async function() {
             await runWrapped(flow.initialize);
@@ -71,6 +74,11 @@ export function activate(context: vscode.ExtensionContext) {
     ];
 
     context.subscriptions.push(...commands);
+    console.log("Done");
+}
+
+export function activate(context: vscode.ExtensionContext) {
+    setup(context).catch(err => console.error(err));
 }
 
 export function deactivate() {
