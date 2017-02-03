@@ -28,14 +28,7 @@
     },
     "icon": "res/icon.svg",
     "activationEvents": [
-        "onCommand:gitflow.initialize",
-        "onCommand:gitflow.featureStart",
-        "onCommand:gitflow.featureRebase",
-        "onCommand:gitflow.featureFinish",
-        "onCommand:gitflow.releaseStart",
-        "onCommand:gitflow.releaseFinish",
-        "onCommand:gitflow.hotfixStart",
-        "onCommand:gitflow.hotfixFinish"
+        "*"
     ],
     "main": "./out/src/extension",
     "contributes": {
