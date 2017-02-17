@@ -204,7 +204,7 @@ export namespace flow.feature {
 
         // Create our new branch
         await cmd.executeRequired(git.info.path, ['checkout', '-b', new_branch.name, local_develop.name]);
-        vscode.window.showInformationMessage(`New branch ${new_branch.name}" was created`);
+        vscode.window.showInformationMessage(`New branch "${new_branch.name}" was created`);
     }
 
     /**
