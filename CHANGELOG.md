@@ -1,3 +1,9 @@
+# 1.1.0
+
+- Large refactor
+- Bugfixes when git is not available on `PATH` but is otherwise installed.
+- Shiny new icon.
+
 # 1.0.0
 
 - New configuration options:
