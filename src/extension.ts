@@ -1,28 +1,31 @@
 'use strict';
 
 import * as vscode from 'vscode';
-
+import {findGit, git} from "./git";
 import {flow} from './flow';
 import {fail} from './fail'
 
+const runWrapped = async function<T>(fn: (...any) => Thenable<T>, args: any[] = []): Promise<T|null> {
+    try {
+        return await fn(...args);
+    } catch(e) {
+        if (!e.handlers || !e.message)
+            throw e;
 
-export function activate(context: vscode.ExtensionContext) {
-    const runWrapped = async function<T>(fn: (...any) => Thenable<T>, args: any[] = []): Promise<T|null> {
-        try {
-            return await fn(...args);
-        } catch(e) {
-            if (!e.handlers || !e.message)
-                throw e;
-
-            const err: fail.IError = e;
-            const chosen = await vscode.window.showErrorMessage(err.message, ...(err.handlers || []));
-            if (!!chosen) {
-                return await runWrapped(chosen.cb);
-            }
-            return null;
+        const err: fail.IError = e;
+        const chosen = await vscode.window.showErrorMessage(err.message, ...(err.handlers || []));
+        if (!!chosen) {
+            return await runWrapped(chosen.cb);
         }
-    };
+        return null;
+    }
+};
 
+
+async function setup(disposables : vscode.Disposable[]) {
+    const pathHint = vscode.workspace.getConfiguration('git').get<string>('path');
+	git.info = await findGit(pathHint);
+    vscode.window.setStatusBarMessage("Using git: " + git.info.path + " with version " + git.info.version);
     const commands = [
         vscode.commands.registerCommand('gitflow.initialize', async function() {
             await runWrapped(flow.initialize);
@@ -69,8 +72,15 @@ export function activate(context: vscode.ExtensionContext) {
             await runWrapped(flow.hotfix.finish);
         })
     ];
+    //add disposable
+    disposables.push(...commands);
+}
 
-    context.subscriptions.push(...commands);
+export function activate(context: vscode.ExtensionContext) {
+	const disposables: vscode.Disposable[] = [];
+	context.subscriptions.push(new vscode.Disposable(() => vscode.Disposable.from(...disposables).dispose()));
+    
+    setup(disposables).catch(err => console.error(err));
 }
 
 export function deactivate() {

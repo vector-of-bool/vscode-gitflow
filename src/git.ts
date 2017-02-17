@@ -1,8 +1,119 @@
+import * as cp from "child_process";
+import * as path from "path";
+import * as fs from "fs";
 import {cmd} from './cmd'
 import {fail} from './fail';
 
-export namespace git {
+//Taken from https://github.com/Microsoft/vscode/blob/cda3584a99d2832ab9d478c6b65ea45c96fe00c9/extensions/git/src/util.ts
+export function denodeify<R>(fn: Function): (...args) => Promise<R> {
+	return (...args) => new Promise((c, e) => fn(...args, (err, r) => err ? e(err) : c(r)));
+}
 
+const readdir = denodeify<string[]>(fs.readdir);
+
+//Taken from https://github.com/Microsoft/vscode/blob/cda3584a99d2832ab9d478c6b65ea45c96fe00c9/extensions/git/src/git.ts
+export interface IGit {
+	path: string;
+	version: string;
+}
+
+function parseVersion(raw: string): string {
+	return raw.replace(/^git version /, '');
+}
+
+function findSpecificGit(path: string): Promise<IGit> {
+	return new Promise<IGit>((c, e) => {
+		const buffers: Buffer[] = [];
+		const child = cp.spawn(path, ['--version']);
+		child.stdout.on('data', (b: Buffer) => buffers.push(b));
+		child.on('error', e);
+		child.on('exit', code => code ? e(new Error('Not found')) : c({ path, version: parseVersion(Buffer.concat(buffers).toString('utf8').trim()) }));
+	});
+}
+
+function findGitDarwin(): Promise<IGit> {
+	return new Promise<IGit>((c, e) => {
+		cp.exec('which git', (err, gitPathBuffer) => {
+			if (err) {
+				return e('git not found');
+			}
+
+			const path = gitPathBuffer.toString().replace(/^\s+|\s+$/g, '');
+
+			function getVersion(path: string) {
+				// make sure git executes
+				cp.exec('git --version', (err, stdout: Buffer) => {
+					if (err) {
+						return e('git not found');
+					}
+
+					return c({ path, version: parseVersion(stdout.toString('utf8').trim()) });
+				});
+			}
+
+			if (path !== '/usr/bin/git') {
+				return getVersion(path);
+			}
+
+			// must check if XCode is installed
+			cp.exec('xcode-select -p', (err: any) => {
+				if (err && err.code === 2) {
+					// git is not installed, and launching /usr/bin/git
+					// will prompt the user to install it
+
+					return e('git not found');
+				}
+
+				getVersion(path);
+			});
+		});
+	});
+}
+
+function findSystemGitWin32(base: string): Promise<IGit> {
+	if (!base) {
+		return Promise.reject<IGit>('Not found');
+	}
+
+	return findSpecificGit(path.join(base, 'Git', 'cmd', 'git.exe'));
+}
+
+function findGitHubGitWin32(): Promise<IGit> {
+	const github = path.join(process.env['LOCALAPPDATA'], 'GitHub');
+
+	return readdir(github).then(children => {
+		const git = children.filter(child => /^PortableGit/.test(child))[0];
+
+		if (!git) {
+			return Promise.reject<IGit>('Not found');
+		}
+
+		return findSpecificGit(path.join(github, git, 'cmd', 'git.exe'));
+	});
+}
+
+function findGitWin32(): Promise<IGit> {
+	return findSystemGitWin32(process.env['ProgramW6432'])
+		.then(void 0, () => findSystemGitWin32(process.env['ProgramFiles(x86)']))
+		.then(void 0, () => findSystemGitWin32(process.env['ProgramFiles']))
+		.then(void 0, () => findSpecificGit('git'))
+		.then(void 0, () => findGitHubGitWin32());
+}
+
+export function findGit(hint: string | undefined): Promise<IGit> {
+	var first = hint ? findSpecificGit(hint) : Promise.reject<IGit>(null);
+
+	return first.then(void 0, () => {
+		switch (process.platform) {
+			case 'darwin': return findGitDarwin();
+			case 'win32': return findGitWin32();
+			default: return findSpecificGit('git');
+		}
+	});
+}
+
+export namespace git {
+    export let info : IGit;
     /**
      * Represents a git remote
      */
@@ -18,7 +129,7 @@ export namespace git {
     export namespace config {
         /// Get a git config value
         export const get = async function (setting: string): Promise<string|null> {
-            const result = await cmd.execute('git', ['config', '--get', setting]);
+            const result = await cmd.execute(info.path, ['config', '--get', setting]);
             if (result.retc) {
                 return null;
             }
@@ -27,7 +138,7 @@ export namespace git {
 
         /// Set a git config value
         export const set = async function (setting: string, value: any): Promise<number> {
-            const result = await cmd.execute('git', ['config', setting, value]);
+            const result = await cmd.execute(info.path, ['config', setting, value]);
             return result.retc;
         }
     }
@@ -64,7 +175,7 @@ export namespace git {
          * Get a list of all tags
          */
         public static all = async function() {
-            const result = await cmd.executeRequired('git', ['tag', '-l']);
+            const result = await cmd.executeRequired(info.path, ['tag', '-l']);
             return TagRef.parseListing(result.stdout);
         }
 
@@ -112,9 +223,9 @@ export namespace git {
          * Get a list of branches available in the current directory
          */
         public static all = async function () {
-            const local_result = await cmd.execute('git', ['branch', '--no-color']);
+            const local_result = await cmd.execute(info.path, ['branch', '--no-color']);
             const local_stdout = local_result.stdout;
-            const remote_result = await cmd.execute('git', ['branch', '-r', '--no-color']);
+            const remote_result = await cmd.execute(info.path, ['branch', '-r', '--no-color']);
             const remote_stdout = remote_result.stdout;
             const filter = function (output): string[] {
                 return output;
@@ -137,7 +248,7 @@ export namespace git {
          */
         public ref = async function (): Promise<string> {
             const self: BranchRef = this;
-            const result = await cmd.execute('git', ['rev-parse', self.name]);
+            const result = await cmd.execute(info.path, ['rev-parse', self.name]);
             return result.stdout.trim();
         }
 
@@ -153,7 +264,7 @@ export namespace git {
      * Get a reference to the currently checked out branch
      */
     export const currentBranch = async function (): Promise<BranchRef|null> {
-        const result = await cmd.executeRequired('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
+        const result = await cmd.executeRequired(info.path, ['rev-parse', '--abbrev-ref', 'HEAD']);
         const name = result.stdout.trim();
         if (name === 'HEAD') {
             // We aren't attached to a branch at the moment
@@ -166,7 +277,7 @@ export namespace git {
      * Pull updates from the given ``remote`` for ``branch``
      */
     export const pull = async function (remote: RemoteRef, branch: BranchRef): Promise<Number> {
-        const result = await cmd.execute('git', ['pull', remote.name, branch.name]);
+        const result = await cmd.execute(info.path, ['pull', remote.name, branch.name]);
         if (result.retc !== 0) {
             fail.error({
                 message: 'Failed to pull from remote. See git output'
@@ -179,7 +290,7 @@ export namespace git {
      * Push updates to ``remote`` at ``branch``
      */
     export const push = async function(remote: RemoteRef, branch: BranchRef): Promise<Number> {
-         const result = await cmd.execute('git', ['push', remote.name, branch.name]);
+         const result = await cmd.execute(info.path, ['push', remote.name, branch.name]);
          if (result.retc !== 0) {
              fail.error({
                  message: 'Failed to push to remote. See git output',
@@ -192,11 +303,11 @@ export namespace git {
      * Check if we have any unsaved changes
      */
     export const isClean = async function (): Promise<boolean> {
-        const diff_res = await cmd.execute('git', ['diff', '--no-ext-diff', '--ignore-submodules', '--quiet', '--exit-code']);
+        const diff_res = await cmd.execute(info.path, ['diff', '--no-ext-diff', '--ignore-submodules', '--quiet', '--exit-code']);
         if (!!diff_res.retc) {
             return false;
         }
-        const diff_index_res = await cmd.execute('git', ['diff-index', '--cached', '--quiet', '--ignore-submodules', 'HEAD', '--']);
+        const diff_index_res = await cmd.execute(info.path, ['diff-index', '--cached', '--quiet', '--ignore-submodules', 'HEAD', '--']);
         if (!!diff_index_res.retc) {
             return false;
         }
@@ -207,7 +318,7 @@ export namespace git {
      * Detect if the branch "subject" was merged into "base"
      */
     export const isMerged = async function (subject: BranchRef, base: BranchRef) {
-        const result = await cmd.executeRequired('git', ['branch', '--no-color', '--contains', subject.name]);
+        const result = await cmd.executeRequired(info.path, ['branch', '--no-color', '--contains', subject.name]);
         const branches = BranchRef.parseListing(result.stdout);
         return branches.some((br) => br.name === base.name);
     }
@@ -223,14 +334,14 @@ export namespace git {
      * Checkout the given git hash
      */
     export function checkoutRef(ref: string) {
-        return cmd.executeRequired('git', ['checkout', ref]);
+        return cmd.executeRequired(info.path, ['checkout', ref]);
     }
 
     /**
      * Merge one branch into the currently checked out branch
      */
     export function merge(other: BranchRef) {
-        return cmd.executeRequired('git', ['merge', '--no-ff', other.name]);
+        return cmd.executeRequired(info.path, ['merge', '--no-ff', other.name]);
     }
 
     interface IRebaseParameters {
@@ -242,7 +353,7 @@ export namespace git {
      * Rebase one branch onto another
      */
     export function rebase(args: IRebaseParameters) {
-        return cmd.executeRequired('git', ['rebase', args.onto.name, args.branch.name]);
+        return cmd.executeRequired(info.path, ['rebase', args.onto.name, args.branch.name]);
     }
 
     /**

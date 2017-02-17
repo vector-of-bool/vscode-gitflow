@@ -4,6 +4,7 @@ import * as proc from 'child_process';
 
 import {fail} from './fail';
 
+
 export namespace cmd {
     export interface ExecutionResult {
         retc: number;
