@@ -25,7 +25,7 @@ const runWrapped = async function<T>(fn: (...any) => Thenable<T>, args: any[] = 
 async function setup(disposables : vscode.Disposable[]) {
     const pathHint = vscode.workspace.getConfiguration('git').get<string>('path');
 	git.info = await findGit(pathHint);
-    vscode.window.setStatusBarMessage("Using git: " + git.info.path + " with version " + git.info.version);
+    vscode.window.setStatusBarMessage("gitflow using git executable: " + git.info.path + " with version " + git.info.version);
     const commands = [
         vscode.commands.registerCommand('gitflow.initialize', async function() {
             await runWrapped(flow.initialize);
@@ -79,7 +79,7 @@ async function setup(disposables : vscode.Disposable[]) {
 export function activate(context: vscode.ExtensionContext) {
 	const disposables: vscode.Disposable[] = [];
 	context.subscriptions.push(new vscode.Disposable(() => vscode.Disposable.from(...disposables).dispose()));
-    
+
     setup(disposables).catch(err => console.error(err));
 }
 
