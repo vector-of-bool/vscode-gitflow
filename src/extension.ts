@@ -26,7 +26,7 @@ async function setup(disposables: vscode.Disposable[]) {
   git.info = await findGit(pathHint);
   vscode.window.setStatusBarMessage(
       'gitflow using git executable: ' + git.info.path + ' with version ' +
-      git.info.version);
+      git.info.version, 5000);
   const commands = [
     vscode.commands.registerCommand(
         'gitflow.initialize',
