@@ -120,7 +120,7 @@ export namespace flow {
             'rev-parse', '--quiet', '--verify', 'HEAD'
           ])).retc) {
       await cmd.executeRequired(
-          git.info.path, ['symbolic-ref', 'HEAD', `refs/head/${master.name}`]);
+          git.info.path, ['symbolic-ref', 'HEAD', `refs/heads/${master.name}`]);
       await cmd.executeRequired(
           git.info.path,
           ['commit', '--allow-empty', '--quiet', '-m', 'Initial commit']);
