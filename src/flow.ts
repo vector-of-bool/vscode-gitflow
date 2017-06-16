@@ -10,6 +10,8 @@ import {cmd} from './cmd';
 import {fs} from './fs';
 import {config} from './config';
 
+const withProgress = vscode.window.withProgress;
+
 export namespace flow {
   export const gitDir = path.join(vscode.workspace.rootPath!, '.git');
   export const gitflowDir = path.join(gitDir, '.gitflow');
@@ -256,62 +258,73 @@ export namespace flow.feature {
   }
 
   export async function finish() {
-    const {branch: feature_branch, name: feature_name} = await current(
-        'You must checkout the feature branch you wish to finish');
+    return withProgress({
+      location: vscode.ProgressLocation.Window,
+      title: 'Finishing feature',
+    }, async (pr) => {
+      pr.report({message: 'Getting current branch...'})
+      const {branch: feature_branch, name: feature_name} = await current(
+          'You must checkout the feature branch you wish to finish');
 
-    const is_clean = await git.isClean();
+      pr.report({message: 'Checking for cleanliness...'})
+      const is_clean = await git.isClean();
 
-    const merge_base_file = path.join(gitflowDir, 'MERGE_BASE');
-    if (await fs.exists(merge_base_file)) {
-      const merge_base = git.BranchRef.fromName(
-          (await fs.readFile(merge_base_file)).toString());
-      if (is_clean) {
-        // The user must have resolved the conflict themselves, so
-        // all we need to do is delete the merge file
-        await fs.remove(merge_base_file);
-        if (await git.isMerged(feature_branch, merge_base)) {
-          // The user already merged this feature branch. We'll just exit!
-          await finishCleanup(feature_branch);
-          return;
+      pr.report({message: 'Checking for incomplete merge...'})
+      const merge_base_file = path.join(gitflowDir, 'MERGE_BASE');
+      if (await fs.exists(merge_base_file)) {
+        const merge_base = git.BranchRef.fromName(
+            (await fs.readFile(merge_base_file)).toString());
+        if (is_clean) {
+          // The user must have resolved the conflict themselves, so
+          // all we need to do is delete the merge file
+          await fs.remove(merge_base_file);
+          if (await git.isMerged(feature_branch, merge_base)) {
+            // The user already merged this feature branch. We'll just exit!
+            await finishCleanup(feature_branch);
+            return;
+          }
+        } else {
+          // They have an unresolved merge conflict. Tell them what they must do
+          fail.error({
+            message:
+                'You have merge conflicts! Resolve them before trying to finish feature branch.'
+          });
         }
-      } else {
-        // They have an unresolved merge conflict. Tell them what they must do
+      }
+
+      await git.requireClean();
+
+      pr.report({message: 'Checking remotes...'})
+      const all_branches = await git.BranchRef.all();
+      // Make sure that the local feature and the remote feature haven't diverged
+      const remote_branch =
+          all_branches.find(br => br.name === 'origin/' + feature_branch.name);
+      if (remote_branch) {
+        await git.requireEqual(feature_branch, remote_branch, true);
+      }
+      // Make sure the local develop and remote develop haven't diverged either
+      const develop = await developBranch();
+      const remote_develop = git.BranchRef.fromName('origin/' + develop.name);
+      if (await remote_develop.exists()) {
+        await git.requireEqual(develop, remote_develop, true);
+      }
+
+      pr.report({message: `Merging ${feature_branch.name} into ${develop}...`});
+      // Switch to develop and merge in the feature branch
+      await git.checkout(develop);
+      const result = await cmd.execute(
+          git.info.path, ['merge', '--no-ff', feature_branch.name]);
+      if (result.retc) {
+        // Merge conflict. Badness
+        await fs.writeFile(gitflowDir, develop.name);
         fail.error({
-          message:
-              'You have merge conflicts! Resolve them before trying to finish feature branch.'
+          message: `There were conflicts while merging into ${develop.name
+                  }. Fix the issues before trying to finish the feature branch`
         });
       }
-    }
-
-    await git.requireClean();
-
-    const all_branches = await git.BranchRef.all();
-    // Make sure that the local feature and the remote feature haven't diverged
-    const remote_branch =
-        all_branches.find(br => br.name === 'origin/' + feature_branch.name);
-    if (remote_branch) {
-      await git.requireEqual(feature_branch, remote_branch, true);
-    }
-    // Make sure the local develop and remote develop haven't diverged either
-    const develop = await developBranch();
-    const remote_develop = git.BranchRef.fromName('origin/' + develop.name);
-    if (await remote_develop.exists()) {
-      await git.requireEqual(develop, remote_develop, true);
-    }
-
-    // Switch to develop and merge in the feature branch
-    await git.checkout(develop);
-    const result = await cmd.execute(
-        git.info.path, ['merge', '--no-ff', feature_branch.name]);
-    if (result.retc) {
-      // Merge conflict. Badness
-      await fs.writeFile(gitflowDir, develop.name);
-      fail.error({
-        message: `There were conflicts while merging into ${develop.name
-                 }. Fix the issues before trying to finish the feature branch`
-      });
-    }
-    await finishCleanup(feature_branch);
+      pr.report({message: 'Cleaning up...'});
+      await finishCleanup(feature_branch);
+    });
   }
 
   async function finishCleanup(branch: git.BranchRef) {
@@ -397,85 +410,103 @@ export namespace flow.release {
 
   export async function finalizeWithBranch(
       rel_prefix: string, branch: git.BranchRef, reenter: Function) {
-    await requireFlowEnabled();
-    const current_branch = await git.currentBranch();
-    if (!current_branch) {
-      throw fail.error({message: 'Unbale to detect a current git branch.'});
-    }
-    if (current_branch.name !== branch.name) {
-      fail.error({
-        message: `You are not currently on the "${branch.name}" branch`,
-        handlers: [{
-          title: `Checkout ${branch.name} and continue.`,
-          cb: async function() {
-            await git.checkout(branch);
-            await reenter();
-          }
-        }]
+    return withProgress({
+      location: vscode.ProgressLocation.Window,
+      title: 'Finishing release branch'
+    }, async (pr) => {
+      await requireFlowEnabled();
+      pr.report({message: 'Getting current branch...'});
+      const current_branch = await git.currentBranch();
+      if (!current_branch) {
+        throw fail.error({message: 'Unable to detect a current git branch.'});
+      }
+      if (current_branch.name !== branch.name) {
+        fail.error({
+          message: `You are not currently on the "${branch.name}" branch`,
+          handlers: [{
+            title: `Checkout ${branch.name} and continue.`,
+            cb: async function() {
+              await git.checkout(branch);
+              await reenter();
+            }
+          }]
+        });
+      }
+
+      pr.report({message: 'Checking cleanliness...'});
+      await git.requireClean();
+
+      pr.report({message: 'Checking remotes...'});
+      const master = await masterBranch();
+      const remote_master = master.remoteAt(git.primaryRemote());
+      if (await remote_master.exists()) {
+        await git.requireEqual(master, remote_master);
+      }
+
+      const develop = await developBranch();
+      const remote_develop = develop.remoteAt(git.primaryRemote());
+      if (await remote_develop.exists()) {
+        await git.requireEqual(develop, remote_develop);
+      }
+
+      // Get the name of the tag we will use. Default is the branch's flow name
+      pr.report({message: 'Getting a tag message...'});
+      const tag_message = await vscode.window.showInputBox({
+        prompt: 'Enter a tag message (optional)',
       });
-    }
+      if (tag_message === undefined) return;
 
-    await git.requireClean();
+      // Now the crux of the logic, after we've done all our sanity checking
+      pr.report({message: 'Switching to master...'});
+      await git.checkout(master);
 
-    const master = await masterBranch();
-    const remote_master = master.remoteAt(git.primaryRemote());
-    if (await remote_master.exists()) {
-      await git.requireEqual(master, remote_master);
-    }
+      // Merge the branch into the master branch
+      if (!(await git.isMerged(branch, master))) {
+        pr.report({message: `Merging ${branch} into ${master}...`});
+        await git.merge(branch);
+      }
 
-    const develop = await developBranch();
-    const remote_develop = develop.remoteAt(git.primaryRemote());
-    if (await remote_develop.exists()) {
-      await git.requireEqual(develop, remote_develop);
-    }
+      // Create a tag for the release
+      const tag_prefix = await tagPrefix();
+      const release_name = branch.name.substr(rel_prefix.length);
+      pr.report({message: `Tagging ${master}: ${release_name}...`});
+      await cmd.executeRequired(
+          git.info.path, ['tag', '-m', tag_message, release_name, master.name]);
 
-    // Get the name of the tag we will use. Default is the branch's flow name
-    const tag_message = await vscode.window.showInputBox({
-      prompt: 'Enter a tag message (optional)',
-    });
-    if (tag_message === undefined) return;
+      // Merge the release into develop
+      pr.report({message: `Checking out ${develop}...`});
+      await git.checkout(develop);
+      if (!(await git.isMerged(branch, develop))) {
+        pr.report({message: `Merging ${branch} into ${develop}...`});
+        await git.merge(branch);
+      }
 
-    // Now the crux of the logic, after we've done all our sanity checking
-    await git.checkout(master);
-
-    // Merge the branch into the master branch
-    if (!(await git.isMerged(branch, master))) {
-      await git.merge(branch);
-    }
-
-    // Create a tag for the release
-    const tag_prefix = await tagPrefix();
-    const release_name = branch.name.substr(rel_prefix.length);
-    await cmd.executeRequired(
-        git.info.path, ['tag', '-m', tag_message, release_name, master.name]);
-
-    // Merge the release into develop
-    await git.checkout(develop);
-    if (!(await git.isMerged(branch, develop))) {
-      await git.merge(branch);
-    }
-
-    if (config.deleteBranchOnFinish) {
-      // Delete the release branch
-      await cmd.executeRequired(git.info.path, ['branch', '-d', branch.name]);
-      if (config.deleteRemoteBranches && await remote_develop.exists() &&
-          await remote_master.exists()) {
-        const remote = git.primaryRemote();
-        await git.push(remote, develop);
-        await git.push(remote, master);
-        const remote_branch = branch.remoteAt(remote);
-        cmd.executeRequired(git.info.path, ['push', '--tags', remote.name]);
-        if (await remote_branch.exists()) {
-          // Delete the remote branch
-          await git.push(remote, git.BranchRef.fromName(':' + branch.name));
+      if (config.deleteBranchOnFinish) {
+        // Delete the release branch
+        pr.report({message: `Deleting ${branch.name}...`});
+        await cmd.executeRequired(git.info.path, ['branch', '-d', branch.name]);
+        if (config.deleteRemoteBranches && await remote_develop.exists() &&
+            await remote_master.exists()) {
+          const remote = git.primaryRemote();
+          pr.report({message: `Pushing to ${remote}/${develop}...`});
+          await git.push(remote, develop);
+          pr.report({message: `Pushing to ${remote}/${master}...`});
+          await git.push(remote, master);
+          const remote_branch = branch.remoteAt(remote);
+          pr.report({message: `Pushing tag ${release_name}...`});
+          cmd.executeRequired(git.info.path, ['push', '--tags', remote.name]);
+          if (await remote_branch.exists()) {
+            // Delete the remote branch
+            pr.report({message: `Deleting remote ${remote}/${branch.name}`});
+            await git.push(remote, git.BranchRef.fromName(':' + branch.name));
+          }
         }
       }
-    }
 
-
-    vscode.window.showInformationMessage(
-        `The release "${release_name
-        }" has been created. You are now on the ${develop.name} branch.`);
+      vscode.window.showInformationMessage(
+          `The release "${release_name
+          }" has been created. You are now on the ${develop.name} branch.`);
+    });
   }
 }
 
