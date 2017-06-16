@@ -1,3 +1,7 @@
+# 1.1.1
+
+- Progress messages while performing git operations
+
 # 1.1.0
 
 - Large refactor
