@@ -488,16 +488,16 @@ export namespace flow.release {
         if (config.deleteRemoteBranches && await remote_develop.exists() &&
             await remote_master.exists()) {
           const remote = git.primaryRemote();
-          pr.report({message: `Pushing to ${remote}/${develop}...`});
+          pr.report({message: `Pushing to ${remote.name}/${develop.name}...`});
           await git.push(remote, develop);
-          pr.report({message: `Pushing to ${remote}/${master}...`});
+          pr.report({message: `Pushing to ${remote.name}/${master.name}...`});
           await git.push(remote, master);
           const remote_branch = branch.remoteAt(remote);
           pr.report({message: `Pushing tag ${release_name}...`});
           cmd.executeRequired(git.info.path, ['push', '--tags', remote.name]);
           if (await remote_branch.exists()) {
             // Delete the remote branch
-            pr.report({message: `Deleting remote ${remote}/${branch.name}`});
+            pr.report({message: `Deleting remote ${remote.name}/${branch.name}`});
             await git.push(remote, git.BranchRef.fromName(':' + branch.name));
           }
         }
