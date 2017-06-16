@@ -11,7 +11,7 @@ import {fs} from './fs';
 import {config} from './config';
 
 export namespace flow {
-  export const gitDir = path.join(vscode.workspace.rootPath, '.git');
+  export const gitDir = path.join(vscode.workspace.rootPath!, '.git');
   export const gitflowDir = path.join(gitDir, '.gitflow');
 
   /**
@@ -429,12 +429,11 @@ export namespace flow.release {
       await git.requireEqual(develop, remote_develop);
     }
 
-
     // Get the name of the tag we will use. Default is the branch's flow name
     const tag_message = await vscode.window.showInputBox({
       prompt: 'Enter a tag message (optional)',
     });
-    if (tag_message === null) return;
+    if (tag_message === undefined) return;
 
     // Now the crux of the logic, after we've done all our sanity checking
     await git.checkout(master);
