@@ -468,7 +468,10 @@ export namespace flow.release {
 
       // Create a tag for the release
       const tag_prefix = await tagPrefix();
-      const release_name = branch.name.substr(rel_prefix.length);
+      let release_name = branch.name.substr(rel_prefix.length);
+      if (tag_prefix) {
+        release_name = tag_prefix.concat(release_name);
+      }
       pr.report({message: `Tagging ${master}: ${release_name}...`});
       await cmd.executeRequired(
           git.info.path, ['tag', '-m', tag_message, release_name, master.name]);
