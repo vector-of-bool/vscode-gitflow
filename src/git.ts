@@ -197,6 +197,17 @@ export namespace git {
     }
 
     /**
+     * Get latest tag
+     */
+    public async latest(): Promise<string> {
+      const latest_tagged_commit = await cmd.executeRequired(
+        info.path, ['rev-list', '--tags', '--max-count=1']);
+      const result = await cmd.executeRequired(
+        info.path, ['describe', '--tags', latest_tagged_commit.stdout.trim()]);
+      return result.stdout.trim();
+    }
+
+    /**
      * Check if the tag exists
      */
     public async exists(): Promise<boolean> {
