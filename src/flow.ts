@@ -366,6 +366,23 @@ export namespace flow.release {
     }
   }
 
+  /**
+   * Get the tag for a new release branch
+   */
+  export async function guess_new_version() {
+    const tag = git.TagRef.fromName("_start_new_release");
+    const tag_prefix = await tagPrefix() || '';
+    let version_tag = await tag.latest();
+    version_tag = version_tag.replace(tag_prefix, '');
+    if (version_tag.match(/^\d+\.\d+\.\d+$/)) {
+      let version_numbers = version_tag.split('.');
+      version_numbers[1] = String(Number(version_numbers[1]) + 1);
+      version_numbers[2] = "0";
+      version_tag = version_numbers.join('.');
+    }
+    return version_tag;
+  }
+
   export async function start(name: string) {
     await requireFlowEnabled();
     const current_release = await release.current();
@@ -528,6 +545,22 @@ export namespace flow.hotfix {
       throw throwNotInitializedError();
     }
     return branches.find(br => br.name.startsWith(prefix));
+  }
+
+  /**
+   * Get the tag for a new hotfix branch
+   */
+  export async function guess_new_version() {
+    const tag = git.TagRef.fromName("_start_new_hotfix");
+    const tag_prefix = await tagPrefix() || '';
+    let version_tag = await tag.latest();
+    version_tag = version_tag.replace(tag_prefix, '');
+    if (version_tag.match(/^\d+\.\d+\.\d+$/)) {
+      let version_numbers = version_tag.split('.');
+      version_numbers[2] = String(Number(version_numbers[2]) + 1);
+      version_tag = version_numbers.join('.');
+    }
+    return version_tag;
   }
 
   export async function start(name: string) {
