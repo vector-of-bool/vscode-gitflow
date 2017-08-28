@@ -372,7 +372,7 @@ export namespace flow.release {
   export async function guess_new_version() {
     const tag = git.TagRef.fromName("_start_new_release");
     const tag_prefix = await tagPrefix() || '';
-    let version_tag = await tag.latest();
+    let version_tag = await tag.latest() || '0.0.0';
     version_tag = version_tag.replace(tag_prefix, '');
     if (version_tag.match(/^\d+\.\d+\.\d+$/)) {
       let version_numbers = version_tag.split('.');
@@ -553,7 +553,7 @@ export namespace flow.hotfix {
   export async function guess_new_version() {
     const tag = git.TagRef.fromName("_start_new_hotfix");
     const tag_prefix = await tagPrefix() || '';
-    let version_tag = await tag.latest();
+    let version_tag = await tag.latest() || '0.0.0';
     version_tag = version_tag.replace(tag_prefix, '');
     if (version_tag.match(/^\d+\.\d+\.\d+$/)) {
       let version_numbers = version_tag.split('.');
