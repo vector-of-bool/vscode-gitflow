@@ -200,11 +200,18 @@ export namespace git {
      * Get latest tag
      */
     public async latest(): Promise<string> {
-      const latest_tagged_commit = await cmd.executeRequired(
-        info.path, ['rev-list', '--tags', '--max-count=1']);
-      const result = await cmd.executeRequired(
-        info.path, ['describe', '--tags', latest_tagged_commit.stdout.trim()]);
-      return result.stdout.trim();
+      let last_tag = '';
+      const a_tag_exists = await cmd.executeRequired(
+        info.path, ['tag', '-l']);
+      if (a_tag_exists.stdout.trim()) {
+        const latest_tagged_commit = await cmd.executeRequired(
+          info.path, ['rev-list', '--tags', '--max-count=1']);
+        const result = await cmd.executeRequired(
+          info.path,
+          ['describe', '--tags', latest_tagged_commit.stdout.trim()]);
+        last_tag = result.stdout.trim();
+      }
+      return last_tag;
     }
 
     /**
