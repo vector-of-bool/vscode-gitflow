@@ -162,8 +162,8 @@ export namespace flow {
     await git.config.set('gitflow.prefix.versiontag', version_tag_prefix);
 
     // Set the main branches, and gitflow is officially 'enabled'
-    git.config.set('gitflow.branch.master', master.name);
-    git.config.set('gitflow.branch.develop', develop.name);
+    await git.config.set('gitflow.branch.master', master.name);
+    await git.config.set('gitflow.branch.develop', develop.name);
 
     console.assert(await flowEnabled());
 
