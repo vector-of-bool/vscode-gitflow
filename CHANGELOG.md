@@ -1,3 +1,9 @@
+# 1.1.2
+
+- *Fix intermittent assertion failure during init* [Thanks `RobDesideri`]
+- Respect tag prefix for releases [Thanks `poohnix`]
+- Guess the next release version automatically [Thanks `poohnix`]
+
 # 1.1.1
 
 - Progress messages while performing git operations
