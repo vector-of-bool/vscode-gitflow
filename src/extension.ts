@@ -60,8 +60,11 @@ async function setup(disposables: vscode.Disposable[]) {
         async function() {
           await runWrapped(flow.requireFlowEnabled);
           await runWrapped(flow.release.precheck);
+          const guessed_version = await runWrapped(
+            flow.release.guess_new_version) || '';
           const name = await vscode.window.showInputBox({
-            placeHolder: '1.6.2',
+            placeHolder: guessed_version,
+            value: guessed_version,
             prompt: 'The name of the release',
           });
           if (!name) return;
@@ -76,7 +79,11 @@ async function setup(disposables: vscode.Disposable[]) {
         'gitflow.hotfixStart',
         async function() {
           await runWrapped(flow.requireFlowEnabled);
+          const guessed_version = await runWrapped(
+            flow.hotfix.guess_new_version) || '';
           const name = await vscode.window.showInputBox({
+            placeHolder: guessed_version,
+            value: guessed_version,
             prompt: 'The name of the hotfix version',
           });
           if (!name) return;
