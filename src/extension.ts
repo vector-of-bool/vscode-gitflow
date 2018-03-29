@@ -56,6 +56,28 @@ async function setup(disposables: vscode.Disposable[]) {
           await runWrapped(flow.feature.finish);
         }),
     vscode.commands.registerCommand(
+          'gitflow.bugfixStart',
+          async function() {
+            await runWrapped(flow.requireFlowEnabled);
+            await runWrapped(flow.bugfix.precheck);
+            const name = await vscode.window.showInputBox({
+              placeHolder: 'my-awesome-bugfix',
+              prompt: 'A new name for your bugfix',
+            });
+            if (!name) return;
+            await runWrapped(flow.bugfix.start, [name]);
+          }),
+      vscode.commands.registerCommand(
+          'gitflow.bugfixRebase',
+          async function() {
+            await runWrapped(flow.bugfix.rebase);
+          }),
+      vscode.commands.registerCommand(
+          'gitflow.bugfixFinish',
+          async function() {
+            await runWrapped(flow.bugfix.finish);
+          }),
+    vscode.commands.registerCommand(
         'gitflow.releaseStart',
         async function() {
           await runWrapped(flow.requireFlowEnabled);

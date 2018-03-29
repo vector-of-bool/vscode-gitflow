@@ -145,7 +145,7 @@ export namespace flow {
     }
 
     // Create the branch prefixes and store those in git config
-    for (const what of ['feature', 'release', 'hotfix', 'support']) {
+    for (const what of ['bugfix', 'feature', 'release', 'hotfix', 'support']) {
       const prefix = await vscode.window.showInputBox({
         prompt: `Enter a prefix for "${what}" branches`,
         value: `${what}/`,
@@ -343,6 +343,180 @@ export namespace flow.feature {
     }
     vscode.window.showInformationMessage(
         `Feature branch ${branch.name} has been closed`);
+  }
+}
+
+export namespace flow.bugfix {
+  /**
+   * Get the bugfix branch prefix
+   */
+  export function prefix() {
+    return git.config.get('gitflow.prefix.bugfix');
+  }
+
+  /**
+   * Get the current bugfix branch as well as its name.
+   */
+  export async function current(
+      msg: string = 'Not working on a bugfix branch') {
+    const current_branch = await git.currentBranch();
+    const prefix = await bugfix.prefix();
+    if (!prefix) {
+      throw throwNotInitializedError();
+    }
+    if (!current_branch || !current_branch.name.startsWith(prefix)) {
+      throw fail.error({message: msg});
+    }
+    const name = current_branch.name.substr(prefix.length);
+    return {branch: current_branch, name: name};
+  }
+
+  export async function precheck() {
+    const local_develop = await developBranch();
+    const remote_develop =
+        git.BranchRef.fromName(`origin/${local_develop.name}`);
+    const local_ref = await local_develop.ref();
+    if (await remote_develop.exists()) {
+      await git.requireEqual(local_develop, remote_develop, true);
+    }
+  }
+
+  export async function start(bugfix_name: string) {
+    console.assert(!!bugfix_name);
+    await requireFlowEnabled();
+    const prefix = await bugfix.prefix();
+    const new_branch = git.BranchRef.fromName(`${prefix}${bugfix_name}`);
+    await requireNoSuchBranch(
+        new_branch, {message: `The bugfix "${bugfix_name}" already exists`});
+
+    // Create our new branch
+    const local_develop = await developBranch();
+    await cmd.executeRequired(
+        git.info.path, ['checkout', '-b', new_branch.name, local_develop.name]);
+    vscode.window.showInformationMessage(
+        `New branch "${new_branch.name}" was created`);
+  }
+
+  /**
+   * Rebase the current bugfix branch on develop
+   */
+  export async function rebase() {
+    await requireFlowEnabled();
+    const {branch: bugfix_branch} = await current(
+        'You must checkout the bugfix branch you wish to rebase on develop');
+
+    const remote = bugfix_branch.remoteAt(git.primaryRemote());
+    const develop = await developBranch();
+    if (await remote.exists() && !(await git.isMerged(remote, develop))) {
+      const do_rebase = !!(await vscode.window.showWarningMessage(
+          `A remote branch for ${bugfix_branch.name} exists, and rebasing ` +
+              `will rewrite history for this branch that may be visible to ` +
+              `other users!`,
+          'Rebase anyway'));
+      if (!do_rebase) return;
+    }
+
+    await git.requireClean();
+    const result = await git.rebase({branch: bugfix_branch, onto: develop});
+    if (result.retc) {
+      const abort_result =
+          await cmd.executeRequired(git.info.path, ['rebase', '--abort']);
+      fail.error({
+        message: `Rebase command failed with exit code ${result.retc}. ` +
+            `The rebase has been aborted: Please perform this rebase from ` +
+            `the command line and resolve the appearing errors.`
+      });
+    }
+    await vscode.window.showInformationMessage(
+        `${bugfix_branch.name} has been rebased onto ${develop.name}`);
+  }
+
+  export async function finish() {
+    return withProgress({
+      location: vscode.ProgressLocation.Window,
+      title: 'Finishing bugfix',
+    }, async (pr) => {
+      pr.report({message: 'Getting current branch...'})
+      const {branch: bugfix_branch, name: bugfix_name} = await current(
+          'You must checkout the bugfix branch you wish to finish');
+
+      pr.report({message: 'Checking for cleanliness...'})
+      const is_clean = await git.isClean();
+
+      pr.report({message: 'Checking for incomplete merge...'})
+      const merge_base_file = path.join(gitflowDir, 'MERGE_BASE');
+      if (await fs.exists(merge_base_file)) {
+        const merge_base = git.BranchRef.fromName(
+            (await fs.readFile(merge_base_file)).toString());
+        if (is_clean) {
+          // The user must have resolved the conflict themselves, so
+          // all we need to do is delete the merge file
+          await fs.remove(merge_base_file);
+          if (await git.isMerged(bugfix_branch, merge_base)) {
+            // The user already merged this bugfix branch. We'll just exit!
+            await finishCleanup(bugfix_branch);
+            return;
+          }
+        } else {
+          // They have an unresolved merge conflict. Tell them what they must do
+          fail.error({
+            message:
+                'You have merge conflicts! Resolve them before trying to finish bugfix branch.'
+          });
+        }
+      }
+
+      await git.requireClean();
+
+      pr.report({message: 'Checking remotes...'})
+      const all_branches = await git.BranchRef.all();
+      // Make sure that the local bugfix and the remote bugfix haven't diverged
+      const remote_branch =
+          all_branches.find(br => br.name === 'origin/' + bugfix_branch.name);
+      if (remote_branch) {
+        await git.requireEqual(bugfix_branch, remote_branch, true);
+      }
+      // Make sure the local develop and remote develop haven't diverged either
+      const develop = await developBranch();
+      const remote_develop = git.BranchRef.fromName('origin/' + develop.name);
+      if (await remote_develop.exists()) {
+        await git.requireEqual(develop, remote_develop, true);
+      }
+
+      pr.report({message: `Merging ${bugfix_branch.name} into ${develop}...`});
+      // Switch to develop and merge in the bugfix branch
+      await git.checkout(develop);
+      const result = await cmd.execute(
+          git.info.path, ['merge', '--no-ff', bugfix_branch.name]);
+      if (result.retc) {
+        // Merge conflict. Badness
+        await fs.writeFile(gitflowDir, develop.name);
+        fail.error({
+          message: `There were conflicts while merging into ${develop.name
+                  }. Fix the issues before trying to finish the bugfix branch`
+        });
+      }
+      pr.report({message: 'Cleaning up...'});
+      await finishCleanup(bugfix_branch);
+    });
+  }
+
+  async function finishCleanup(branch: git.BranchRef) {
+    console.assert(await branch.exists());
+    console.assert(await git.isClean());
+    const origin = git.RemoteRef.fromName('origin');
+    const remote = git.BranchRef.fromName(origin.name + '/' + branch.name);
+    if (config.deleteBranchOnFinish) {
+      if (config.deleteRemoteBranches && await remote.exists()) {
+        // Delete the branch on the remote
+        await git.push(
+            git.RemoteRef.fromName('origin'),
+            git.BranchRef.fromName(`:refs/heads/${branch.name}`));
+      }
+      await cmd.executeRequired(git.info.path, ['branch', '-d', branch.name]);
+    }
+    vscode.window.showInformationMessage(
+        `bugfix branch ${branch.name} has been closed`);
   }
 }
 
