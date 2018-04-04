@@ -7,8 +7,8 @@ import {fail} from './fail'
 
 async function runWrapped<T>(
     fn: (...any) => Thenable<T>, args: any[] = []): Promise<T|null> {
-  try {return await fn(...args);} catch (e) {
-    if (!e.handlers || !e.message) throw e;
+  try {return await fn(...args); } catch (e) {
+    if (!e.handlers || !e.message) { throw e; }
 
     const err: fail.IError = e;
     const chosen = await vscode.window.showErrorMessage(
@@ -18,8 +18,7 @@ async function runWrapped<T>(
     }
     return null;
   }
-};
-
+}
 
 async function setup(disposables: vscode.Disposable[]) {
   const pathHint = vscode.workspace.getConfiguration('git').get<string>('path');
@@ -30,92 +29,92 @@ async function setup(disposables: vscode.Disposable[]) {
   const commands = [
     vscode.commands.registerCommand(
         'gitflow.initialize',
-        async function() {
+        async () => {
           await runWrapped(flow.initialize);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureStart',
-        async function() {
+        async () => {
           await runWrapped(flow.requireFlowEnabled);
           await runWrapped(flow.feature.precheck);
           const name = await vscode.window.showInputBox({
             placeHolder: 'my-awesome-feature',
             prompt: 'A new name for your feature',
           });
-          if (!name) return;
+          if (!name) { return; }
           await runWrapped(flow.feature.start, [name]);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureRebase',
-        async function() {
+        async () => {
           await runWrapped(flow.feature.rebase);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureFinish',
-        async function() {
+        async () => {
           await runWrapped(flow.feature.finish);
         }),
     vscode.commands.registerCommand(
           'gitflow.bugfixStart',
-          async function() {
+          async () => {
             await runWrapped(flow.requireFlowEnabled);
             await runWrapped(flow.bugfix.precheck);
             const name = await vscode.window.showInputBox({
               placeHolder: 'my-awesome-bugfix',
               prompt: 'A new name for your bugfix',
             });
-            if (!name) return;
+            if (!name) { return; }
             await runWrapped(flow.bugfix.start, [name]);
           }),
       vscode.commands.registerCommand(
           'gitflow.bugfixRebase',
-          async function() {
+          async () => {
             await runWrapped(flow.bugfix.rebase);
           }),
       vscode.commands.registerCommand(
           'gitflow.bugfixFinish',
-          async function() {
+          async () => {
             await runWrapped(flow.bugfix.finish);
           }),
     vscode.commands.registerCommand(
         'gitflow.releaseStart',
-        async function() {
+        async () => {
           await runWrapped(flow.requireFlowEnabled);
           await runWrapped(flow.release.precheck);
-          const guessed_version = await runWrapped(
+          const guessedVersion = await runWrapped(
             flow.release.guess_new_version) || '';
           const name = await vscode.window.showInputBox({
-            placeHolder: guessed_version,
-            value: guessed_version,
+            placeHolder: guessedVersion,
             prompt: 'The name of the release',
+            value: guessedVersion,
           });
-          if (!name) return;
+          if (!name) { return; }
           await runWrapped(flow.release.start, [name]);
         }),
     vscode.commands.registerCommand(
         'gitflow.releaseFinish',
-        async function() {
+        async () => {
           await runWrapped(flow.release.finish);
         }),
     vscode.commands.registerCommand(
         'gitflow.hotfixStart',
-        async function() {
+        async () => {
           await runWrapped(flow.requireFlowEnabled);
-          const guessed_version = await runWrapped(
+          const guessedVersion = await runWrapped(
             flow.hotfix.guess_new_version) || '';
           const name = await vscode.window.showInputBox({
-            placeHolder: guessed_version,
-            value: guessed_version,
+            placeHolder: guessedVersion,
             prompt: 'The name of the hotfix version',
+            value: guessedVersion,
           });
-          if (!name) return;
+          if (!name) { return; }
           await runWrapped(flow.hotfix.start, [name]);
         }),
     vscode.commands.registerCommand(
         'gitflow.hotfixFinish',
-        async function() {
+        async () => {
           await runWrapped(flow.hotfix.finish);
-        })
+        }),
   ];
   // add disposable
   disposables.push(...commands);
@@ -126,8 +125,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(new vscode.Disposable(
       () => vscode.Disposable.from(...disposables).dispose()));
 
-  setup(disposables).catch(err => console.error(err));
+  setup(disposables).catch((err) => console.error(err));
 }
 
 export function
+// tslint:disable-next-line:no-empty
 deactivate() {}
