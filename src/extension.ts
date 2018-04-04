@@ -42,39 +42,39 @@ async function setup(disposables: vscode.Disposable[]) {
             prompt: 'A new name for your feature',
           });
           if (!name) { return; }
-          await runWrapped(flow.feature.start, [name]);
+          await runWrapped(flow.feature.start, [name, 'feature']);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureRebase',
         async () => {
-          await runWrapped(flow.feature.rebase);
+          await runWrapped(flow.feature.rebase, ['feature']);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureFinish',
         async () => {
-          await runWrapped(flow.feature.finish);
+          await runWrapped(flow.feature.finish, ['feature']);
         }),
     vscode.commands.registerCommand(
           'gitflow.bugfixStart',
           async () => {
             await runWrapped(flow.requireFlowEnabled);
-            await runWrapped(flow.bugfix.precheck);
+            await runWrapped(flow.feature.precheck);
             const name = await vscode.window.showInputBox({
               placeHolder: 'my-awesome-bugfix',
               prompt: 'A new name for your bugfix',
             });
             if (!name) { return; }
-            await runWrapped(flow.bugfix.start, [name]);
+            await runWrapped(flow.feature.start, [name, 'bugfix']);
           }),
       vscode.commands.registerCommand(
           'gitflow.bugfixRebase',
           async () => {
-            await runWrapped(flow.bugfix.rebase);
+            await runWrapped(flow.feature.rebase, ['bugfix']);
           }),
       vscode.commands.registerCommand(
           'gitflow.bugfixFinish',
           async () => {
-            await runWrapped(flow.bugfix.finish);
+            await runWrapped(flow.feature.finish, ['bugfix']);
           }),
     vscode.commands.registerCommand(
         'gitflow.releaseStart',
