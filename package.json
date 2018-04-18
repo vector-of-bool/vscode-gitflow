@@ -54,6 +54,21 @@
                 "category": "Gitflow"
             },
             {
+                "command": "gitflow.bugfixStart",
+                "title": "Bugfix: start",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.bugfixRebase",
+                "title": "Bugfix: rebase",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.bugfixFinish",
+                "title": "Bugfix: finish",
+                "category": "Gitflow"
+            },
+            {
                 "command": "gitflow.releaseStart",
                 "title": "Release: start",
                 "category": "Gitflow"
