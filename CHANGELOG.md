@@ -2,6 +2,7 @@
 
 - Add `bugfix` branch support [Thanks Vincent Biret ([baywet](https://github.com/baywet))]
 - Fix unhelpful error messages sometimes appearing
+- (1.2.1 fixes the changelog to include 1.2.0)
 
 # 1.1.2
 
