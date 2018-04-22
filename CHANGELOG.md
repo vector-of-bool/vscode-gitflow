@@ -1,3 +1,8 @@
+# 1.2.0
+
+- Add `bugfix` branch support [Thanks Vincent Biret ([baywet](https://github.com/baywet))]
+- Fix unhelpful error messages sometimes appearing
+
 # 1.1.2
 
 - *Fix intermittent assertion failure during init* [Thanks `RobDesideri`]

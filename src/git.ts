@@ -51,13 +51,13 @@ function findGitDarwin(): Promise<IGit> {
 
       function getVersion(path: string) {
         // make sure git executes
-        cp.exec('git --version', (err, stdout: Buffer) => {
+        cp.exec('git --version', (err: Error, stdout: string) => {
           if (err) {
             return e('git not found');
           }
 
           return c(
-              {path, version: parseVersion(stdout.toString('utf8').trim())});
+              {path, version: parseVersion(stdout.trim())});
         });
       }
 

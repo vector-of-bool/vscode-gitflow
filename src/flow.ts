@@ -145,7 +145,7 @@ export namespace flow {
     }
 
     // Create the branch prefixes and store those in git config
-    for (const what of ['feature', 'release', 'hotfix', 'support']) {
+    for (const what of ['bugfix', 'feature', 'release', 'hotfix', 'support']) {
       const prefix = await vscode.window.showInputBox({
         prompt: `Enter a prefix for "${what}" branches`,
         value: `${what}/`,
@@ -174,19 +174,19 @@ export namespace flow {
 
 export namespace flow.feature {
   /**
-   * Get the feature branch prefix
+   * Get the feature/bugfix branch prefix
    */
-  export function prefix() {
-    return git.config.get('gitflow.prefix.feature');
+  export function prefix(branchType: string) {
+    return git.config.get(`gitflow.prefix.${branchType}`);
   }
 
   /**
-   * Get the current feature branch as well as its name.
+   * Get the current feature/bugfix branch as well as its name.
    */
   export async function current(
-      msg: string = 'Not working on a feature branch') {
+      msg: string = 'Not working on a feature or bugfix branch', branchType: string) {
     const current_branch = await git.currentBranch();
-    const prefix = await feature.prefix();
+    const prefix = await feature.prefix(branchType);
     if (!prefix) {
       throw throwNotInitializedError();
     }
@@ -207,13 +207,16 @@ export namespace flow.feature {
     }
   }
 
-  export async function start(feature_name: string) {
+  export async function start(feature_name: string, branchType: string) {
     console.assert(!!feature_name);
     await requireFlowEnabled();
-    const prefix = await feature.prefix();
+    const prefix = await feature.prefix(branchType);
+    if (!prefix) {
+      throw throwNotInitializedError();
+    }
     const new_branch = git.BranchRef.fromName(`${prefix}${feature_name}`);
     await requireNoSuchBranch(
-        new_branch, {message: `The feature "${feature_name}" already exists`});
+        new_branch, {message: `The ${branchType} "${feature_name}" already exists`});
 
     // Create our new branch
     const local_develop = await developBranch();
@@ -226,10 +229,10 @@ export namespace flow.feature {
   /**
    * Rebase the current feature branch on develop
    */
-  export async function rebase() {
+  export async function rebase(branchType: string) {
     await requireFlowEnabled();
     const {branch: feature_branch} = await current(
-        'You must checkout the feature branch you wish to rebase on develop');
+        `You must checkout the ${branchType} branch you wish to rebase on develop`, branchType);
 
     const remote = feature_branch.remoteAt(git.primaryRemote());
     const develop = await developBranch();
@@ -257,14 +260,14 @@ export namespace flow.feature {
         `${feature_branch.name} has been rebased onto ${develop.name}`);
   }
 
-  export async function finish() {
+  export async function finish(branchType: string) {
     return withProgress({
       location: vscode.ProgressLocation.Window,
-      title: 'Finishing feature',
+      title: `Finishing ${branchType}`,
     }, async (pr) => {
       pr.report({message: 'Getting current branch...'})
       const {branch: feature_branch, name: feature_name} = await current(
-          'You must checkout the feature branch you wish to finish');
+          `You must checkout the ${branchType} branch you wish to finish`, branchType);
 
       pr.report({message: 'Checking for cleanliness...'})
       const is_clean = await git.isClean();
@@ -280,14 +283,14 @@ export namespace flow.feature {
           await fs.remove(merge_base_file);
           if (await git.isMerged(feature_branch, merge_base)) {
             // The user already merged this feature branch. We'll just exit!
-            await finishCleanup(feature_branch);
+            await finishCleanup(feature_branch, branchType);
             return;
           }
         } else {
           // They have an unresolved merge conflict. Tell them what they must do
           fail.error({
             message:
-                'You have merge conflicts! Resolve them before trying to finish feature branch.'
+                `You have merge conflicts! Resolve them before trying to finish ${branchType} branch.`
           });
         }
       }
@@ -319,15 +322,15 @@ export namespace flow.feature {
         await fs.writeFile(gitflowDir, develop.name);
         fail.error({
           message: `There were conflicts while merging into ${develop.name
-                  }. Fix the issues before trying to finish the feature branch`
+                  }. Fix the issues before trying to finish the ${branchType} branch`
         });
       }
       pr.report({message: 'Cleaning up...'});
-      await finishCleanup(feature_branch);
+      await finishCleanup(feature_branch, branchType);
     });
   }
 
-  async function finishCleanup(branch: git.BranchRef) {
+  async function finishCleanup(branch: git.BranchRef, branchType: string) {
     console.assert(await branch.exists());
     console.assert(await git.isClean());
     const origin = git.RemoteRef.fromName('origin');
@@ -342,7 +345,7 @@ export namespace flow.feature {
       await cmd.executeRequired(git.info.path, ['branch', '-d', branch.name]);
     }
     vscode.window.showInformationMessage(
-        `Feature branch ${branch.name} has been closed`);
+        `${branchType.substring(0, 1).toUpperCase()}${branchType.substring(1)} branch ${branch.name} has been closed`);
   }
 }
 

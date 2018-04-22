@@ -2,7 +2,7 @@
     "name": "gitflow",
     "displayName": "gitflow",
     "description": "Gitflow integration and support in Visual Studio Code",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "publisher": "vector-of-bool",
     "repository": {
         "type": "git",
@@ -26,7 +26,7 @@
         "color": "#09585e",
         "theme": "dark"
     },
-    "icon": "res/icon.svg",
+    "icon": "res/icon_128.png",
     "activationEvents": [
         "*"
     ],
@@ -51,6 +51,21 @@
             {
                 "command": "gitflow.featureFinish",
                 "title": "Feature: finish",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.bugfixStart",
+                "title": "Bugfix: start",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.bugfixRebase",
+                "title": "Bugfix: rebase",
+                "category": "Gitflow"
+            },
+            {
+                "command": "gitflow.bugfixFinish",
+                "title": "Bugfix: finish",
                 "category": "Gitflow"
             },
             {
