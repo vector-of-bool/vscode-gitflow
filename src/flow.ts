@@ -211,6 +211,9 @@ export namespace flow.feature {
     console.assert(!!feature_name);
     await requireFlowEnabled();
     const prefix = await feature.prefix(branchType);
+    if (!prefix) {
+      throw throwNotInitializedError();
+    }
     const new_branch = git.BranchRef.fromName(`${prefix}${feature_name}`);
     await requireNoSuchBranch(
         new_branch, {message: `The ${branchType} "${feature_name}" already exists`});
