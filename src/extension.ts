@@ -28,7 +28,8 @@ async function setup(disposables: vscode.Disposable[]) {
   vscode.window.setStatusBarMessage(
       'gitflow using git executable: ' + git.info.path + ' with version ' +
       git.info.version, 5000);
-  const commands = [
+  
+  disposables.push(
     vscode.commands.registerCommand(
         'gitflow.initialize',
         async () => {
@@ -117,9 +118,7 @@ async function setup(disposables: vscode.Disposable[]) {
         async () => {
           await runWrapped(flow.hotfix.finish);
         }),
-  ];
-  // add disposable
-  disposables.push(...commands);
+  );
 }
 
 export function activate(context: vscode.ExtensionContext) {
