@@ -44,7 +44,7 @@ async function setup(disposables: vscode.Disposable[]) {
             prompt: 'A new name for your feature',
           });
           if (!name) { return; }
-          await runWrapped(flow.feature.start, [name, 'feature']);
+          await runWrapped(flow.feature.start, [name.split(' ').join('-'), 'feature']);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureRebase',
@@ -66,7 +66,7 @@ async function setup(disposables: vscode.Disposable[]) {
               prompt: 'A new name for your bugfix',
             });
             if (!name) { return; }
-            await runWrapped(flow.feature.start, [name, 'bugfix']);
+            await runWrapped(flow.feature.start, [name.split(' ').join('-'), 'bugfix']);
           }),
       vscode.commands.registerCommand(
           'gitflow.bugfixRebase',
@@ -91,7 +91,7 @@ async function setup(disposables: vscode.Disposable[]) {
             value: guessedVersion,
           });
           if (!name) { return; }
-          await runWrapped(flow.release.start, [name]);
+          await runWrapped(flow.release.start, [name.split(' ').join('-')]);
         }),
     vscode.commands.registerCommand(
         'gitflow.releaseFinish',
@@ -110,7 +110,7 @@ async function setup(disposables: vscode.Disposable[]) {
             value: guessedVersion,
           });
           if (!name) { return; }
-          await runWrapped(flow.hotfix.start, [name]);
+          await runWrapped(flow.hotfix.start, [name.split(' ').join('-')]);
         }),
     vscode.commands.registerCommand(
         'gitflow.hotfixFinish',
