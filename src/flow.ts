@@ -15,6 +15,8 @@ const withProgress = vscode.window.withProgress;
 export namespace flow {
   export const gitDir = path.join(vscode.workspace.rootPath!, '.git');
   export const gitflowDir = path.join(gitDir, '.gitflow');
+  export let workingDir: string | undefined;
+  export let workingRepo: string | undefined;
 
   /**
    * Get the release branch prefix

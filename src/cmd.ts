@@ -2,6 +2,7 @@ import * as proc from 'child_process';
 import * as vscode from 'vscode';
 
 import {fail} from './fail';
+import {flow} from './flow';
 
 
 export namespace cmd {
@@ -16,7 +17,7 @@ export namespace cmd {
       options?: proc.SpawnOptions): Promise<ExecutionResult> {
     return new Promise<ExecutionResult>((resolve, reject) => {
       options = options || {};
-      options.cwd = options.cwd || vscode.workspace.rootPath;
+      options.cwd = options.cwd || flow.workingDir || vscode.workspace.rootPath;
       console.log(`[gitflow] Execute ${command}`, args.join(' '));
       const child = proc.spawn(command, args, options);
       child.on('error', (err) => {

@@ -5,6 +5,12 @@ import {findGit, git} from './git';
 import {flow} from './flow';
 import {fail} from './fail'
 
+async function selectRepo() {
+  const repo = await vscode.window.showWorkspaceFolderPick()
+  flow.workingDir = repo?.uri.path
+  flow.workingRepo = repo?.name
+}
+
 async function runWrapped<T>(fn: (...any) => Thenable<T>, args: any[] = []): Promise<T|null> {
   try {
     return await fn(...args);
@@ -32,11 +38,13 @@ async function setup(disposables: vscode.Disposable[]) {
     vscode.commands.registerCommand(
         'gitflow.initialize',
         async () => {
+          await selectRepo()
           await runWrapped(flow.initialize);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureStart',
         async () => {
+          await selectRepo()
           await runWrapped(flow.requireFlowEnabled);
           await runWrapped(flow.feature.precheck);
           const name = await vscode.window.showInputBox({
@@ -49,16 +57,19 @@ async function setup(disposables: vscode.Disposable[]) {
     vscode.commands.registerCommand(
         'gitflow.featureRebase',
         async () => {
+          await selectRepo()
           await runWrapped(flow.feature.rebase, ['feature']);
         }),
     vscode.commands.registerCommand(
         'gitflow.featureFinish',
         async () => {
+          await selectRepo()
           await runWrapped(flow.feature.finish, ['feature']);
         }),
     vscode.commands.registerCommand(
           'gitflow.bugfixStart',
           async () => {
+            await selectRepo()
             await runWrapped(flow.requireFlowEnabled);
             await runWrapped(flow.feature.precheck);
             const name = await vscode.window.showInputBox({
@@ -71,16 +82,19 @@ async function setup(disposables: vscode.Disposable[]) {
       vscode.commands.registerCommand(
           'gitflow.bugfixRebase',
           async () => {
+            await selectRepo()
             await runWrapped(flow.feature.rebase, ['bugfix']);
           }),
       vscode.commands.registerCommand(
           'gitflow.bugfixFinish',
           async () => {
+            await selectRepo()
             await runWrapped(flow.feature.finish, ['bugfix']);
           }),
     vscode.commands.registerCommand(
         'gitflow.releaseStart',
         async () => {
+          await selectRepo()
           await runWrapped(flow.requireFlowEnabled);
           await runWrapped(flow.release.precheck);
           const guessedVersion = await runWrapped(
@@ -96,11 +110,13 @@ async function setup(disposables: vscode.Disposable[]) {
     vscode.commands.registerCommand(
         'gitflow.releaseFinish',
         async () => {
+          await selectRepo()
           await runWrapped(flow.release.finish);
         }),
     vscode.commands.registerCommand(
         'gitflow.hotfixStart',
         async () => {
+          await selectRepo()
           await runWrapped(flow.requireFlowEnabled);
           const guessedVersion = await runWrapped(
             flow.hotfix.guess_new_version) || '';
@@ -115,6 +131,7 @@ async function setup(disposables: vscode.Disposable[]) {
     vscode.commands.registerCommand(
         'gitflow.hotfixFinish',
         async () => {
+          await selectRepo()
           await runWrapped(flow.hotfix.finish);
         }),
   ];
