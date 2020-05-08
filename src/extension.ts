@@ -6,7 +6,14 @@ import {flow} from './flow';
 import {fail} from './fail'
 
 async function selectRepo() {
-  const repo = await vscode.window.showWorkspaceFolderPick()
+  const repo = await vscode.window.showWorkspaceFolderPick({
+    placeHolder: 'Select one repository'
+  })
+  if (!repo) {
+    fail.error({
+      message: 'You have to select one repository'
+    });
+  }
   flow.workingDir = repo?.uri.path
   flow.workingRepo = repo?.name
 }
