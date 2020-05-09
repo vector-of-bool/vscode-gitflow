@@ -1,5 +1,7 @@
 # Gitflow integration for Visual Studio Code
 
+[![marketplace](https://flat.badgen.net/vs-marketplace/v/buianhthang.gitflow)](https://marketplace.visualstudio.com/items?itemName=buianhthang.gitflow) ![installs](https://flat.badgen.net/vs-marketplace/i/buianhthang.gitflow) ![downloads](https://flat.badgen.net/vs-marketplace/d/buianhthang.gitflow) ![rating](https://flat.badgen.net/vs-marketplace/rating/buianhthang.gitflow)
+
 This extension provides integration and support for [gitflow](http://nvie.com/posts/a-successful-git-branching-model/). It is based on [this gitflow implementation](https://github.com/nvie/gitflow) and intends to be fully compatible with it.
 
 ## Getting Started
@@ -28,3 +30,5 @@ $ git init
 Forked from [vector-of-bool/vscode-gitflow](https://github.com/vector-of-bool/vscode-gitflow).
 
 Development is ongoing. Please help support this project by trying it out and submitting issues and feature requests to [the github page](https://github.com/buianhthang/vscode-gitflow).
+
+Icons made by [Flat Icons](https://www.flaticon.com/authors/flat-icons) from [www.flaticon.com](https://www.flaticon.com/)
