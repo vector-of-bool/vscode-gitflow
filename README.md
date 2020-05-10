@@ -4,13 +4,19 @@
 
 This extension provides integration and support for [gitflow](http://nvie.com/posts/a-successful-git-branching-model/). It is based on [this gitflow implementation](https://github.com/nvie/gitflow) and intends to be fully compatible with it.
 
-## Getting Started
+## ✨ What's new
+* Workspace support
+* TODO
+    - Add new config: squashBranchOnFinish
+    - Add gitflow funtions into SCM
+
+## 🏁 Getting Started
 
 If you already have gitflow set up for your repository, just start execcuting gitflow commands from the Command Palette!
 
 ![Opening example](res/gitflow.png)
 
-## Starting from Scratch
+## 🎬 Starting from Scratch
 
 1. First, initialize git:
 ```sh
@@ -21,14 +27,13 @@ $ git init
 3. Select 'Initialize repository for gitflow'
 
 4. Follow the command prompts and accept the defaults...
-![Defaults](res/defaults.png)
+
+![default](res/default.png)
 
 5. Setup complete!
 
-## Note
+## 📝 Note
 
 Forked from [vector-of-bool/vscode-gitflow](https://github.com/vector-of-bool/vscode-gitflow).
-
-Development is ongoing. Please help support this project by trying it out and submitting issues and feature requests to [the github page](https://github.com/buianhthang/vscode-gitflow).
 
 Icons made by [Flat Icons](https://www.flaticon.com/authors/flat-icons) from [www.flaticon.com](https://www.flaticon.com/)
