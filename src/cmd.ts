@@ -27,10 +27,10 @@ export namespace cmd {
             })
             let stdout_acc = ''
             let stderr_acc = ''
-            child.stdout.on('data', (data: Uint8Array) => {
+            child.stdout?.on('data', (data: Uint8Array) => {
                 stdout_acc += data.toString()
             })
-            child.stderr.on('data', (data: Uint8Array) => {
+            child.stderr?.on('data', (data: Uint8Array) => {
                 stderr_acc += data.toString()
             })
             child.on('close', (retc) => {

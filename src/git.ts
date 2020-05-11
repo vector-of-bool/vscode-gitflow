@@ -83,7 +83,7 @@ function findGitDarwin(): Promise<IGit> {
     })
 }
 
-function findSystemGitWin32(base: string): Promise<IGit> {
+function findSystemGitWin32(base?: string): Promise<IGit> {
     if (!base) {
         return Promise.reject<IGit>('Not found')
     }
@@ -92,7 +92,7 @@ function findSystemGitWin32(base: string): Promise<IGit> {
 }
 
 function findGitHubGitWin32(): Promise<IGit> {
-    const github = path.join(process.env['LOCALAPPDATA'], 'GitHub')
+    const github = path.join(process.env['LOCALAPPDATA'] || '', 'GitHub')
 
     return readdir(github).then((children) => {
         const git = children.filter((child) => /^PortableGit/.test(child))[0]

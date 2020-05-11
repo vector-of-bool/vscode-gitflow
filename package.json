@@ -17,7 +17,7 @@
     "flow"
   ],
   "engines": {
-    "vscode": "^1.13.0"
+    "vscode": "^1.45.0"
   },
   "categories": [
     "Other"
@@ -127,7 +127,7 @@
   "devDependencies": {
     "@types/mocha": "^7.0.2",
     "@types/node": "~13.13.5",
-    "@types/vscode": "^1.44.0",
+    "@types/vscode": "1.45.0",
     "mocha": "^7.1.2",
     "typescript": "^3.8.3"
   }
