@@ -1,129 +1,134 @@
 {
-    "name": "gitflow",
-    "displayName": "gitflow",
-    "description": "Gitflow integration and support in Visual Studio Code",
-    "version": "1.2.1",
-    "publisher": "vector-of-bool",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/vector-of-bool/vscode-gitflow"
-    },
-    "bugs": {
-        "url": "https://github.com/vector-of-bool/vscode-gitflow/issues"
-    },
-    "homepage": "https://github.com/vector-of-bool/vscode-gitflow",
-    "keywords": [
-        "git",
-        "flow"
+  "name": "gitflow",
+  "displayName": "gitflow",
+  "description": "Gitflow integration and support in Visual Studio Code",
+  "version": "2.0.0",
+  "publisher": "buianhthang",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buianhthang/vscode-gitflow"
+  },
+  "bugs": {
+    "url": "https://github.com/buianhthang/vscode-gitflow/issues"
+  },
+  "homepage": "https://github.com/buianhthang/vscode-gitflow",
+  "keywords": [
+    "git",
+    "flow"
+  ],
+  "engines": {
+    "vscode": "^1.13.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "galleryBanner": {
+    "color": "#09585e",
+    "theme": "dark"
+  },
+  "icon": "res/icon_128.png",
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/src/extension",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitflow.initialize",
+        "title": "Initialize repository for gitflow",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.featureStart",
+        "title": "Feature: start",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.featureRebase",
+        "title": "Feature: rebase",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.featureFinish",
+        "title": "Feature: finish",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.bugfixStart",
+        "title": "Bugfix: start",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.bugfixRebase",
+        "title": "Bugfix: rebase",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.bugfixFinish",
+        "title": "Bugfix: finish",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.releaseStart",
+        "title": "Release: start",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.releaseFinish",
+        "title": "Release: finish",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.hotfixStart",
+        "title": "Hotfix: start",
+        "category": "Gitflow"
+      },
+      {
+        "command": "gitflow.hotfixFinish",
+        "title": "Hotfix: finish",
+        "category": "Gitflow"
+      }
     ],
-    "engines": {
-        "vscode": "^1.13.0"
-    },
-    "categories": [
-        "Other"
-    ],
-    "galleryBanner": {
-        "color": "#09585e",
-        "theme": "dark"
-    },
-    "icon": "res/icon_128.png",
-    "activationEvents": [
-        "*"
-    ],
-    "main": "./out/src/extension",
-    "contributes": {
-        "commands": [
-            {
-                "command": "gitflow.initialize",
-                "title": "Initialize repository for gitflow",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.featureStart",
-                "title": "Feature: start",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.featureRebase",
-                "title": "Feature: rebase",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.featureFinish",
-                "title": "Feature: finish",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.bugfixStart",
-                "title": "Bugfix: start",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.bugfixRebase",
-                "title": "Bugfix: rebase",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.bugfixFinish",
-                "title": "Bugfix: finish",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.releaseStart",
-                "title": "Release: start",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.releaseFinish",
-                "title": "Release: finish",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.hotfixStart",
-                "title": "Hotfix: start",
-                "category": "Gitflow"
-            },
-            {
-                "command": "gitflow.hotfixFinish",
-                "title": "Hotfix: finish",
-                "category": "Gitflow"
-            }
-        ],
-        "configuration": {
-            "properties": {
-                "gitflow.deleteBranchOnFinish": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "After finishing a branch, delete the branch"
-                },
-                "gitflow.deleteRemoteBranches": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "If true, and `gitflow.deleteBranchOnFinish` is true, remote branches will be deleted when finishing a branch"
-                },
-                "gitflow.default.development": {
-                    "type": "string",
-                    "default": "develop",
-                    "description": "Default name for the development branch [develop]"
-                },
-                "gitflow.default.production": {
-                    "type": "string",
-                    "default": "master",
-                    "description": "Default name for the production branch [master]"
-                }
-            }
+    "configuration": {
+      "properties": {
+        "gitflow.squashCommitsOnFinish": {
+          "type": "boolean",
+          "default": false,
+          "description": "After finishing a branch, squash commits"
+        },
+        "gitflow.deleteBranchOnFinish": {
+          "type": "boolean",
+          "default": true,
+          "description": "After finishing a branch, delete the branch"
+        },
+        "gitflow.deleteRemoteBranches": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, and `gitflow.deleteBranchOnFinish` is true, remote branches will be deleted when finishing a branch"
+        },
+        "gitflow.default.development": {
+          "type": "string",
+          "default": "develop",
+          "description": "Default name for the development branch [develop]"
+        },
+        "gitflow.default.production": {
+          "type": "string",
+          "default": "master",
+          "description": "Default name for the production branch [master]"
         }
-    },
-    "scripts": {
-        "vscode:prepublish": "./node_modules/typescript/bin/tsc -p ./",
-        "compile": "./node_modules/typescript/bin/tsc -watch -p ./",
-        "postinstall": "node ./node_modules/vscode/bin/install"
-    },
-    "devDependencies": {
-        "@types/mocha": "^7.0.2",
-        "@types/node": "~13.13.5",
-        "@types/vscode": "^1.44.0",
-        "mocha": "^7.1.2",
-        "typescript": "^3.8.3"
+      }
     }
+  },
+  "scripts": {
+    "vscode:prepublish": "./node_modules/typescript/bin/tsc -p ./",
+    "compile": "./node_modules/typescript/bin/tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install"
+  },
+  "devDependencies": {
+    "@types/mocha": "^7.0.2",
+    "@types/node": "~13.13.5",
+    "@types/vscode": "^1.44.0",
+    "mocha": "^7.1.2",
+    "typescript": "^3.8.3"
+  }
 }
