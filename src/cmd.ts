@@ -50,7 +50,7 @@ export namespace cmd {
         const result = await execute(command, args, options)
         if (result.retc !== 0) {
             fail.error({
-                message: `"${command}" returned status ${result.retc}`,
+                message: `"${command}" returned status ${result.retc}, message: ${result.stderr}`,
             })
         }
         return result

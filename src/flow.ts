@@ -383,7 +383,7 @@ export namespace flow.feature {
                 }
 
                 pr.report({
-                    message: `Merging ${feature_branch.name} into ${develop}...`,
+                    message: `Merging ${feature_branch.name} into ${develop.name}...`,
                 })
                 // Switch to develop and merge in the feature branch
                 await git.checkout(develop)

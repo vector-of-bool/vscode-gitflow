@@ -6,8 +6,9 @@ This extension provides integration and support for [gitflow](http://nvie.com/po
 
 ## ✨ What's new
 * Workspace support
+* Better error message
 * TODO
-    - Add new config: squashBranchOnFinish
+    - Squash commits on finish feature or release branches
     - Add gitflow funtions into SCM
 
 ## 🏁 Getting Started
